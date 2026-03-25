@@ -14,7 +14,31 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Create build env
+        run: |
+          cat > .env.production << 'EOF'
+          NODE_ENV=production
+          HOST=0.0.0.0
+          PORT=3000
+          NUXT_PUBLIC_SITE_URL=https://bndstr.trmusic.de
+          NUXT_APP_BASE_URL=/
+          NUXT_PUBLIC_SITE_NAME=bndstr
+          AUTH_SECRET=ci-build-placeholder-not-a-real-secret
+          GOOGLE_CLIENT_ID=
+          GOOGLE_CLIENT_SECRET=
+          FACEBOOK_CLIENT_ID=
+          FACEBOOK_CLIENT_SECRET=
+          GITHUB_CLIENT_ID=
+          GITHUB_CLIENT_SECRET=
+          GH_TOKEN=
+          GH_REPO=mbchris/bndstr
+          GH_PROJECT_NUMBER=3
+          GH_PROJECT_OWNER=mbchris
+          DEVMODE=false
+          WHITELIST_EMAILS=
+          EOF
+
       - name: Build
         run: |
           chmod +x ./do
-          ./do build
+          ./do build production
