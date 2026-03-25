@@ -3,6 +3,7 @@ node_modules/
 
 # ── Nuxt Build ────────────────────────────────────
 .nuxt/
+.quasar/
 .output/
 dist/
 

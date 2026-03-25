@@ -39,6 +39,12 @@ Port AdminPage from Nuxt
 
 Port StandPage from Nuxt
 
+✅ Implement Stripe billing API endpoints (checkout, portal, webhook) + BillingPage wiring (Step 7)
+
+🟨 Capacitor mode scaffold created (`packages/web/src-capacitor`), but iOS/Android platform builds and deep-link config are still pending (Step 6)
+
+✅ Added tracked Codex permissions config (`.codex/settings.local.json`) mirroring `.claude/settings.local.json`
+
 ## Context
 
 bndstr is currently a single-band management webapp (Nuxt 3 + SQLite + Nitro). The goal is to transform it into a **multi-tenant SaaS platform** where multiple bands can sign up, manage setlists/voting/calendars, and be accessed via **web, iOS, and Android** (via Capacitor). Target scale: ~500 bands.
