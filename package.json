@@ -1,0 +1,40 @@
+{
+  "name": "bndstr",
+  "version": "0.1.0",
+  "private": true,
+  "description": "bndstr — band website",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "lint": "eslint .",
+    "typecheck": "nuxt typecheck",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@nuxt/ui": "^2.15.2",
+    "@sidebase/nuxt-auth": "^0.9.1",
+    "better-sqlite3": "^9.5.0",
+    "drizzle-orm": "^0.30.9",
+    "marked": "^17.0.5",
+    "next-auth": "~4.21.1",
+    "nuxt": "^3.16.0",
+    "sqlite3": "^5.1.7",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@nuxt/eslint": "^1.3.0",
+    "@types/better-sqlite3": "^7.6.9",
+    "drizzle-kit": "^0.20.17",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.0",
+    "vitest": "^1.6.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

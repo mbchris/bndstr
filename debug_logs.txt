@@ -1,0 +1,100 @@
+dev-1  | --- [AUTH-LOGGER] POST http://localhost:3000/api/auth/signin/github ---
+dev-1  | ERROR  [next-auth][error][SIGNIN_OAUTH_ERROR] 
+dev-1  | https://next-auth.js.org/errors#signin_oauth_error client_id is required { error:
+dev-1  |    { message: 'client_id is required',
+dev-1  |      stack:
+dev-1  |       'TypeError: client_id is required\n    at new BaseClient (/app/node_modules/openid-client/lib/client.js:185:13)\n    at new Client (/app/node_modules/openid-client/lib/client.js:1876:7)\n    at openidClient (/app/node_modules/next-auth/core/lib/oauth/client.js:29:18)\n    at getAuthorizationUrl (/app/node_modules/next-auth/core/lib/oauth/authorization-url.js:70:49)\n    at Object.signin (/app/node_modules/next-auth/core/routes/signin.js:38:60)\n    at AuthHandler (/app/node_modules/next-auth/core/index.js:253:39)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async Object.handler (file:///app/.nuxt/dev/index.mjs:3667:24)\n    at async file:///app/node_modules/h3/dist/index.mjs:2011:19\n    at async Object.callAsync (file:///app/node_modules/unctx/dist/index.mjs:72:16)',
+dev-1  |      name: 'TypeError' },
+dev-1  |   providerId: 'github',
+dev-1  |   message: 'client_id is required' }
+dev-1  | Pathname: /api/auth/signin/github
+dev-1  | Query: {}
+dev-1  | Relevant Headers: { host: 'localhost:3000',
+dev-1  |   'x-forwarded-host': undefined,
+dev-1  |   'x-forwarded-proto': 'http',
+dev-1  |   'x-forwarded-uri': undefined,
+dev-1  |   'x-forwarded-for': '172.18.0.1',
+dev-1  |   'x-original-uri': undefined,
+dev-1  |   origin: 'http://localhost:3000',
+dev-1  |   referer: 'http://localhost:3000/api/auth/signin?error=OAuthSignin' }
+dev-1  | --------------------------------------------
+dev-1  | --- [AUTH-LOGGER] GET http://localhost:3000/api/auth/error?error=OAuthSignin ---
+dev-1  | Pathname: /api/auth/error
+dev-1  | Query: {"error":"OAuthSignin"}
+dev-1  | Relevant Headers: { host: 'localhost:3000',
+dev-1  |   'x-forwarded-host': undefined,
+dev-1  |   'x-forwarded-proto': 'http',
+dev-1  |   'x-forwarded-uri': undefined,
+dev-1  |   'x-forwarded-for': '172.18.0.1',
+dev-1  |   'x-original-uri': undefined,
+dev-1  |   origin: undefined,
+dev-1  |   referer: 'http://localhost:3000/api/auth/signin?error=OAuthSignin' }
+dev-1  | --------------------------------------------
+dev-1  | --- [AUTH-LOGGER] GET http://localhost:3000/api/auth/signin?error=OAuthSignin ---
+dev-1  | Pathname: /api/auth/signin
+dev-1  | Query: {"error":"OAuthSignin"}
+dev-1  | Relevant Headers: { host: 'localhost:3000',
+dev-1  |   'x-forwarded-host': undefined,
+dev-1  |   'x-forwarded-proto': 'http',
+dev-1  |   'x-forwarded-uri': undefined,
+dev-1  |   'x-forwarded-for': '172.18.0.1',
+dev-1  |   'x-original-uri': undefined,
+dev-1  |   origin: undefined,
+dev-1  |   referer: 'http://localhost:3000/api/auth/signin?error=OAuthSignin' }
+dev-1  | --------------------------------------------
+dev-1  | --- [AUTH-LOGGER] POST http://localhost:3000/api/auth/signin/github ---
+dev-1  | ERROR  [next-auth][error][SIGNIN_OAUTH_ERROR] 
+dev-1  | https://next-auth.js.org/errors#signin_oauth_error client_id is required { error:
+dev-1  |    { message: 'client_id is required',
+dev-1  |      stack:
+dev-1  |       'TypeError: client_id is required\n    at new BaseClient (/app/node_modules/openid-client/lib/client.js:185:13)\n    at new Client (/app/node_modules/openid-client/lib/client.js:1876:7)\n    at openidClient (/app/node_modules/next-auth/core/lib/oauth/client.js:29:18)\n    at getAuthorizationUrl (/app/node_modules/next-auth/core/lib/oauth/authorization-url.js:70:49)\n    at Object.signin (/app/node_modules/next-auth/core/routes/signin.js:38:60)\n    at AuthHandler (/app/node_modules/next-auth/core/index.js:253:39)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async Object.handler (file:///app/.nuxt/dev/index.mjs:3667:24)\n    at async file:///app/node_modules/h3/dist/index.mjs:2011:19\n    at async Object.callAsync (file:///app/node_modules/unctx/dist/index.mjs:72:16)',
+dev-1  |      name: 'TypeError' },
+dev-1  |   providerId: 'github',
+dev-1  |   message: 'client_id is required' }
+dev-1  | Pathname: /api/auth/signin/github
+dev-1  | Query: {}
+dev-1  | Relevant Headers: { host: 'localhost:3000',
+dev-1  |   'x-forwarded-host': undefined,
+dev-1  |   'x-forwarded-proto': 'http',
+dev-1  |   'x-forwarded-uri': undefined,
+dev-1  |   'x-forwarded-for': '172.18.0.1',
+dev-1  |   'x-original-uri': undefined,
+dev-1  |   origin: 'http://localhost:3000',
+dev-1  |   referer: 'http://localhost:3000/api/auth/signin?error=OAuthSignin' }
+dev-1  | --------------------------------------------
+dev-1  | --- [AUTH-LOGGER] GET http://localhost:3000/api/auth/error?error=OAuthSignin ---
+dev-1  | Pathname: /api/auth/error
+dev-1  | Query: {"error":"OAuthSignin"}
+dev-1  | Relevant Headers: { host: 'localhost:3000',
+dev-1  |   'x-forwarded-host': undefined,
+dev-1  |   'x-forwarded-proto': 'http',
+dev-1  |   'x-forwarded-uri': undefined,
+dev-1  |   'x-forwarded-for': '172.18.0.1',
+dev-1  |   'x-original-uri': undefined,
+dev-1  |   origin: undefined,
+dev-1  |   referer: 'http://localhost:3000/api/auth/signin?error=OAuthSignin' }
+dev-1  | --------------------------------------------
+dev-1  | --- [AUTH-LOGGER] GET http://localhost:3000/api/auth/signin?error=OAuthSignin ---
+dev-1  | Pathname: /api/auth/signin
+dev-1  | Query: {"error":"OAuthSignin"}
+dev-1  | Relevant Headers: { host: 'localhost:3000',
+dev-1  |   'x-forwarded-host': undefined,
+dev-1  |   'x-forwarded-proto': 'http',
+dev-1  |   'x-forwarded-uri': undefined,
+dev-1  |   'x-forwarded-for': '172.18.0.1',
+dev-1  |   'x-original-uri': undefined,
+dev-1  |   origin: undefined,
+dev-1  |   referer: 'http://localhost:3000/api/auth/signin?error=OAuthSignin' }
+dev-1  | --------------------------------------------
+dev-1  | --- [AUTH-LOGGER] GET http://localhost:3000/api/auth/signin?error=OAuthSignin ---
+dev-1  | Pathname: /api/auth/signin
+dev-1  | Query: {"error":"OAuthSignin"}
+dev-1  | Relevant Headers: { host: 'localhost:3000',
+dev-1  |   'x-forwarded-host': undefined,
+dev-1  |   'x-forwarded-proto': 'http',
+dev-1  |   'x-forwarded-uri': undefined,
+dev-1  |   'x-forwarded-for': '172.18.0.1',
+dev-1  |   'x-original-uri': undefined,
+dev-1  |   origin: undefined,
+dev-1  |   referer: 'http://localhost:3000/api/auth/signin?error=OAuthSignin' }
+dev-1  | --------------------------------------------
