@@ -1,0 +1,11 @@
+import { boot } from 'quasar/wrappers'
+import { createAuthClient } from 'better-auth/vue'
+
+export const authClient = createAuthClient({
+  baseURL: import.meta.env.API_URL ?? '',
+  basePath: '/api/auth',
+})
+
+export default boot(() => {
+  // authClient is used directly in stores/auth.ts and components
+})

@@ -1,0 +1,17 @@
+// bndstr design tokens — mirrors current CSS custom properties
+:root {
+  --brand: #7c3aed;
+  --brand-light: #a78bfa;
+  --surface: #1a1a2e;
+  --surface-raised: #16213e;
+  --border: rgba(255, 255, 255, 0.08);
+  --text: #e2e8f0;
+  --text-muted: #94a3b8;
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+
+// Override Quasar primary color
+.q-btn.q-btn--primary {
+  background: var(--brand);
+}

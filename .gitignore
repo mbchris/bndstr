@@ -32,3 +32,13 @@ yarn-error.log*
 # ── Test / Coverage ───────────────────────────────
 coverage/
 .nyc_output/
+
+.claude/
+.data/
+.dockerignore
+.env
+.env.production
+.env.staging
+.env.template
+.npmrc
+
