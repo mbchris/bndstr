@@ -1,0 +1,39 @@
+# name: Sync Backlog to GitHub Projects
+
+# on:
+#   push:
+#     branches: [main]
+#     paths:
+#       - 'docs/backlog/**'
+
+#   workflow_dispatch:
+
+# jobs:
+#   sync:
+#     runs-on: [self-hosted]
+#     permissions:
+#       issues: write
+#       contents: write
+
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@v4
+
+#       - name: Install jq
+#         run: sudo apt-get install -y jq
+
+#       - name: Sync backlog
+#         env:
+#           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+#           GH_REPO: ${{ github.repository }}
+#           GH_PROJECT_NUMBER: ${{ vars.GH_PROJECT_NUMBER || '3' }}
+#           GH_PROJECT_OWNER: ${{ vars.GH_PROJECT_OWNER || github.repository_owner }}
+#         run: bash scripts/sync-backlog.sh --apply --project
+
+#       - name: Commit issue number updates
+#         run: |
+#           git config user.name "github-actions[bot]"
+#           git config user.email "github-actions[bot]@users.noreply.github.com"
+#           git add docs/backlog/
+#           git diff --cached --quiet || git commit -m "chore: update backlog with issue numbers"
+#           git push
