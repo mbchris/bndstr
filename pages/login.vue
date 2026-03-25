@@ -116,7 +116,7 @@ const handleDevLogin = async () => {
   try {
     // Specifically use the 'credentials' provider with a mock email
     await signIn('credentials', { 
-      email: 'schneider.chris@gmx.de',
+      email: 'admin@example.org',
       callbackUrl: '/' 
     })
   } catch (e) {

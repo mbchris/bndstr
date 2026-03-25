@@ -204,7 +204,6 @@ export default {
     emailWhitelist: 'Email (Whitelist)',
     emailLogin: 'Email (Required for Login)',
     role: 'Role',
-    systemAdmin: 'System Admin',
     systemStatus: 'System Status',
     database: 'Database',
     connected: 'Connected',

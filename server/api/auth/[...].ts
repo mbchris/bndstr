@@ -112,8 +112,6 @@ export default NuxtAuthHandler({
             }
 
             const effectiveEmail = (user?.email || profile?.email || '').toLowerCase();
-            const hardcodedAdmin = "schneider.chris@gmx.de";
-            const role = effectiveEmail === hardcodedAdmin ? 'admin' : 'user';
 
             let existingUser = await db.select().from(users).where(eq(users.email, effectiveEmail)).get();
 
@@ -127,19 +125,16 @@ export default NuxtAuthHandler({
                 }
             }
 
-            console.log(`[AUTH] Accepted: ${effectiveEmail} (Target Role: ${role})`);
+            console.log(`[AUTH] Accepted: ${effectiveEmail}`);
 
             if (!existingUser) {
-                console.log(`[AUTH] User ${effectiveEmail} not in DB. Auto-creating as ${role}...`);
+                console.log(`[AUTH] User ${effectiveEmail} not in DB. Auto-creating as user...`);
                 const newUser = await db.insert(users).values({
                     name: user?.name || (profile as any)?.name || effectiveEmail.split('@')[0],
                     email: effectiveEmail,
-                    role: role
+                    role: 'user'
                 }).returning();
                 existingUser = newUser[0];
-            } else if (existingUser.role !== role && effectiveEmail === hardcodedAdmin) {
-                console.log(`[AUTH] Upgrading existing hardcoded admin ${effectiveEmail} to admin role.`);
-                await db.update(users).set({ role: 'admin' }).where(eq(users.id, existingUser.id)).run();
             }
 
             return !!existingUser;

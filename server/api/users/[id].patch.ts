@@ -63,15 +63,6 @@ export default defineEventHandler(async (event) => {
     if (body.isHidden !== undefined) updateData.isHidden = body.isHidden;
     if (body.beerCount !== undefined) updateData.beerCount = Number(body.beerCount);
 
-    // Hardcoded admin protection
-    if (targetUser.email.toLowerCase() === 'schneider.chris@gmx.de') {
-        if (updateData.role && updateData.role !== 'admin') {
-            throw createError({
-                statusCode: 400,
-                message: 'Cannot downgrade the main administrator.',
-            });
-        }
-    }
 
     if (Object.keys(updateData).length === 0) {
         log('No changes provided');

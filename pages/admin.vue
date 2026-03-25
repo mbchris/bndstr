@@ -22,8 +22,7 @@
                  <template #actions-data="{ row }">
                     <div class="flex gap-1 items-center">
                        <UButton color="gray" variant="ghost" icon="i-heroicons-pencil-square" size="xs" @click="openEdit(row)" />
-                       <UButton v-if="row.email !== 'schneider.chris@gmx.de'" color="red" variant="ghost" icon="i-heroicons-trash" size="xs" :loading="removingId === row.id" @click="removeUser(row.id)" />
-                       <div v-else class="text-[10px] text-gray-400 italic px-2">{{ t('admin.systemAdmin') }}</div>
+                       <UButton color="red" variant="ghost" icon="i-heroicons-trash" size="xs" :loading="removingId === row.id" @click="removeUser(row.id)" />
                     </div>
                  </template>
               </UTable>
@@ -185,7 +184,7 @@
                    <UInput v-model="editingUser.email" type="email" required />
                 </UFormGroup>
                 <UFormGroup :label="t('admin.role')">
-                   <USelect v-model="editingUser.role" :options="['user', 'admin']" :disabled="editingUser.email === 'schneider.chris@gmx.de'" />
+                   <USelect v-model="editingUser.role" :options="['user', 'admin']" />
                 </UFormGroup>
                  <UFormGroup :help="t('admin.hiddenHint')">
                     <UCheckbox v-model="editingUser.isHidden" :label="t('admin.isHidden')" />
