@@ -15,4 +15,6 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build
-        run: ./do build
+        run: |
+          chmod +x ./do
+          ./do build
