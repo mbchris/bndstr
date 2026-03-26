@@ -29,17 +29,22 @@ export const useAuthStore = defineStore('auth', () => {
   const activeBand = computed(() => bands.value.find((b) => b.id === activeBandId.value) ?? null)
 
   async function loadSession() {
-    const { data } = await authClient.getSession()
-    if (data?.user) {
-      user.value = {
-        id: data.user.id,
-        name: data.user.name,
-        email: data.user.email,
-        image: data.user.image,
+    try {
+      const { data } = await authClient.getSession()
+      if (data?.user) {
+        user.value = {
+          id: data.user.id,
+          name: data.user.name,
+          email: data.user.email,
+          image: data.user.image,
+        }
+      } else {
+        user.value = null
+        token.value = null
       }
-    } else {
-      user.value = null
-      token.value = null
+    } catch {
+      // Network or upstream API errors must not break initial navigation.
+      clearSession()
     }
   }
 

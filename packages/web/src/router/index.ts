@@ -16,6 +16,12 @@ export default route(function (/* { store, ssrContext } */) {
     history: createHistory(process.env.VUE_ROUTER_BASE),
   })
 
+  router.onError(() => {
+    if (window.location.pathname !== '/login') {
+      window.location.href = '/login'
+    }
+  })
+
   router.beforeEach(async (to) => {
     const auth = useAuthStore()
 

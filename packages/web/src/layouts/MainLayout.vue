@@ -93,8 +93,14 @@ const isAdmin = computed(() => {
 })
 
 async function loadBands() {
-  const bands = await apiJson<typeof authStore.bands>('/bands')
-  authStore.setBands(bands)
+  try {
+    const bands = await apiJson<typeof authStore.bands>('/bands')
+    authStore.setBands(bands)
+  } catch {
+    // Prevent white-screen on boot if bands endpoint is unavailable.
+    authStore.clearSession()
+    window.location.href = '/login'
+  }
 }
 
 async function handleLogout() {
