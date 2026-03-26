@@ -53,6 +53,7 @@ COPY nginx.conf /etc/nginx/conf.d/bndstr.conf
 COPY --from=build /app/packages/web/dist/spa/ /usr/share/nginx/html/
 
 # Copy API build + production deps
+COPY --from=api-deps /app/node_modules/ node_modules/
 COPY --from=api-deps /app/packages/ packages/
 COPY --from=build /app/packages/api/dist/ packages/api/dist/
 
