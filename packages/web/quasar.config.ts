@@ -1,12 +1,14 @@
 import { configure } from 'quasar/wrappers'
 
 export default configure(function (/* ctx */) {
+  const apiUrl = process.env.API_URL || `http://localhost:${process.env.PORT || '3001'}`
+
   return {
     eslint: {
       fix: true,
     },
 
-    boot: ['auth', 'api', 'i18n'],
+    boot: ['pinia', 'auth', 'api', 'i18n'],
 
     css: ['app.scss'],
 
@@ -20,7 +22,7 @@ export default configure(function (/* ctx */) {
       vueRouterMode: 'history',
       vitePlugins: [],
       env: {
-        API_URL: process.env.API_URL || 'http://localhost:3001',
+        API_URL: apiUrl,
       },
     },
 
@@ -28,7 +30,7 @@ export default configure(function (/* ctx */) {
       port: 9000,
       proxy: {
         '/api': {
-          target: process.env.API_URL || 'http://localhost:3001',
+          target: apiUrl,
           changeOrigin: true,
         },
       },
