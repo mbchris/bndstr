@@ -7,13 +7,14 @@ services:
       - .:/app
       - node_modules:/app/node_modules
     ports:
-      - "${API_PORT:-3001}:3001"
+      - "${API_PORT:-3001}:${PORT:-3001}"
       - "${WEB_PORT:-9000}:9000"
     env_file:
       - ${ENV_FILE:-.env}
     environment:
       - NODE_ENV=development
       - DEVMODE=true
+      - DATABASE_URL=${DATABASE_URL:-postgresql://bndstr:bndstr_dev@host.docker.internal:5432/bndstr}
     command: sh -c "corepack enable && corepack prepare pnpm@latest --activate && pnpm install && pnpm run dev"
     extra_hosts:
       - "host.docker.internal:host-gateway"
