@@ -1,61 +1,48 @@
 services:
   # ── Development ───────────────────────────────
   dev:
-    image: node:20-alpine
+    image: node:22-alpine
     working_dir: /app
     volumes:
       - .:/app
       - node_modules:/app/node_modules
     ports:
-      - "${PORT:-3000}:3000"
+      - "${API_PORT:-3001}:3001"
+      - "${WEB_PORT:-9000}:9000"
     env_file:
       - ${ENV_FILE:-.env}
     environment:
       - NODE_ENV=development
       - DEVMODE=true
-    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    command: sh -c "corepack enable && corepack prepare pnpm@latest --activate && pnpm install && pnpm run dev"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     profiles:
       - dev
 
-  # ── Production ────────────────────────────────
+  # ── Production (unified) ────────────────────
   prod:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        NUXT_APP_BASE_URL: /
-        NUXT_AUTH_ORIGIN: https://bndstr.trmusic.de
-        bndstr_GIT_REV: ${bndstr_GIT_REV:-${SOURCE_COMMIT:-}}
-    env_file: 
+    env_file:
       - ${ENV_FILE:-.env}
     environment:
       - NODE_ENV=production
-      - NUXT_APP_BASE_URL=/
-      - NUXT_PUBLIC_SITE_URL=https://bndstr.trmusic.de
-      - AUTH_ORIGIN=https://bndstr.trmusic.de
-      - NUXT_AUTH_ORIGIN=https://bndstr.trmusic.de
-      - NEXTAUTH_URL=https://bndstr.trmusic.de
-      - AUTH_TRUST_HOST=true
-      - NUXT_PUBLIC_COMMIT_ID=${bndstr_GIT_REV:-${SOURCE_COMMIT:-}}
-      - bndstr_GIT_REV=${bndstr_GIT_REV:-${SOURCE_COMMIT:-}}
+      - PORT=3001
     container_name: ${COOLIFY_CONTAINER_NAME:-bndstr-prod}
     restart: unless-stopped
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.bndstr-prod.rule=Host(`bndstr.trmusic.de`) && PathPrefix(`/`)"
-      - "traefik.http.routers.bndstr-prod.priority=2000"
+      - "traefik.http.routers.bndstr-prod.rule=Host(`${APP_DOMAIN:-bndstr.trmusic.de}`)"
       - "traefik.http.routers.bndstr-prod.entrypoints=https"
       - "traefik.http.routers.bndstr-prod.tls=true"
       - "traefik.http.routers.bndstr-prod.tls.certresolver=letsencrypt"
-      - "traefik.http.services.bndstr-prod.loadbalancer.server.port=3000"
+      - "traefik.http.services.bndstr-prod.loadbalancer.server.port=80"
       - "traefik.docker.network=coolify"
     networks:
       - app-net
       - proxy-net
-    volumes:
-      - ./data-prod:/app/.data
     extra_hosts:
       - "host.docker.internal:host-gateway"
     profiles:

@@ -1,69 +1,70 @@
-# ── Stage 1: Build ────────────────────────────────
-FROM node:20-alpine AS build
+# ── Stage 1: Build API + Web ─────────────────────
+FROM node:22-alpine AS build
 
 WORKDIR /app
 
-# Install dependencies required for node-gyp (better-sqlite3) and git
-RUN apk update && apk add --no-cache python3 make g++ gcc libgcc libstdc++ git
-ENV PYTHON=/usr/bin/python3
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Install Node dependencies
-COPY package.json package-lock.json* ./
-# We pass --ignore-scripts first to prevent node-gyp from hanging during the tree fetch, 
-# then we rebuild the binaries specifically. Notice npm ci instead of install.
-RUN NODE_ENV=development npm ci --legacy-peer-deps
+# Copy workspace root files
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* ./
 
-# Copy source and build
-COPY . .
+# Copy package.json for each workspace package
+COPY packages/api/package.json packages/api/
+COPY packages/shared/package.json packages/shared/
+COPY packages/web/package.json packages/web/
 
-# NUXT_APP_BASE_URL and NUXT_AUTH_ORIGIN must be available at build time 
-# because nuxt.config.ts and auth module "bake" them in.
-ARG NUXT_APP_BASE_URL=/
-ARG NUXT_AUTH_ORIGIN=https://bndstr.trmusic.de
-ARG bndstr_GIT_REV
-ENV NUXT_APP_BASE_URL=${NUXT_APP_BASE_URL}
-ENV NUXT_AUTH_ORIGIN=${NUXT_AUTH_ORIGIN}
-# Use bndstr_GIT_REV if provided, otherwise fallback to git rev-parse if .git exists
-RUN if [ -n "$bndstr_GIT_REV" ]; then \
-      CID=$bndstr_GIT_REV; \
-    elif [ -d ".git" ]; then \
-      CID=$(git rev-parse --short HEAD); \
-    else \
-      CID="unknown"; \
-    fi && \
-    echo "=====================================" && \
-    echo "BUILD-VERSION: $CID" && \
-    echo "=====================================" && \
-    export NUXT_PUBLIC_COMMIT_ID="$CID" && \
-    echo "NUXT_PUBLIC_COMMIT_ID=$CID" > /app/.env.build && \
-    npm run build
+# Install all dependencies
+RUN NODE_ENV=development pnpm install --frozen-lockfile || pnpm install
 
-# ── Stage 2: Production ──────────────────────────
-FROM node:20-alpine AS production
+# Copy source
+COPY packages/ packages/
 
-# better-sqlite3 needs native C++ runtime libs
-RUN apk add --no-cache libstdc++
+# Build API (tsc) and Web (quasar build) in parallel via pnpm
+RUN pnpm run build
+
+# ── Stage 2: API production dependencies ─────────
+FROM node:22-alpine AS api-deps
 
 WORKDIR /app
 
-# Copy the built output
-COPY --from=build /app/.output .output/
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Copy better-sqlite3 native module (externalized from Nitro bundle)
-COPY --from=build /app/node_modules/better-sqlite3 node_modules/better-sqlite3/
-COPY --from=build /app/node_modules/bindings node_modules/bindings/
-COPY --from=build /app/node_modules/file-uri-to-path node_modules/file-uri-to-path/
-COPY --from=build /app/node_modules/prebuild-install node_modules/prebuild-install/
+COPY --from=build /app/package.json /app/pnpm-workspace.yaml ./
+COPY --from=build /app/packages/api/package.json packages/api/
+COPY --from=build /app/packages/shared/package.json packages/shared/
+COPY pnpm-lock.yaml* ./
 
-# Copy .env.build to root as .env so Nitro can read public variables at runtime
-COPY --from=build /app/.env.build .env
+RUN pnpm install --filter @bndstr/api --filter @bndstr/shared --prod --frozen-lockfile || pnpm install --filter @bndstr/api --filter @bndstr/shared --prod
 
-# Runtime configuration
+# ── Stage 3: Production (nginx + node) ───────────
+FROM nginx:1.27-alpine AS production
+
+# Install Node.js for the API server
+RUN apk add --no-cache nodejs
+
+WORKDIR /app
+
+# Nginx config
+RUN rm /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/conf.d/bndstr.conf
+
+# Copy built SPA
+COPY --from=build /app/packages/web/dist/spa/ /usr/share/nginx/html/
+
+# Copy API build + production deps
+COPY --from=api-deps /app/packages/ packages/
+COPY --from=build /app/packages/api/dist/ packages/api/dist/
+
+# For the unified container, nginx proxies to localhost instead of "api" hostname
+RUN sed -i 's|http://api:3001|http://127.0.0.1:3001|g' /etc/nginx/conf.d/bndstr.conf
+
+# Runtime config
 ENV HOST=0.0.0.0
-ENV PORT=3000
+ENV PORT=3001
 ENV NODE_ENV=production
-ENV NODE_OPTIONS="--max-old-space-size=1024"
 
-EXPOSE 3000
+EXPOSE 80
 
-CMD ["node", ".output/server/index.mjs"]
+# Start both API and nginx
+CMD node /app/packages/api/dist/index.js & nginx -g "daemon off;"
