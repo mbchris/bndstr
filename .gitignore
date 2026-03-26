@@ -43,3 +43,10 @@ coverage/
 .env.template
 .npmrc
 
+# ── Coolify / Deployment ─────────────────────────
+.coolify-db-credentials
+backups/
+
+# ── Local env files (workspace) ──────────────────
+.env.api
+.env.web

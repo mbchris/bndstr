@@ -1,0 +1,82 @@
+# docker-compose.coolify.yml — Coolify production deployment
+#
+# PostgreSQL is provisioned as a separate Coolify "Database" resource.
+# Connect it by setting DATABASE_URL in the Coolify environment variables.
+#
+# Coolify setup:
+#   1. Create a PostgreSQL database resource in Coolify
+#   2. Create a Docker Compose resource pointing to this file
+#   3. Set environment variables (see .env.api.template)
+#   4. Coolify auto-provisions TLS via Traefik
+
+services:
+  # ── Hono API ─────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: ${COOLIFY_CONTAINER_NAME:-bndstr}-api
+    restart: unless-stopped
+    env_file:
+      - .env.api
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+    expose:
+      - "3001"
+    networks:
+      - app-net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ── Quasar SPA (Nginx) ──────────────────────────
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+      args:
+        API_URL: /api
+    container_name: ${COOLIFY_CONTAINER_NAME:-bndstr}-web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.bndstr.rule=Host(`${APP_DOMAIN:-bndstr.trmusic.de}`)"
+      - "traefik.http.routers.bndstr.entrypoints=https"
+      - "traefik.http.routers.bndstr.tls=true"
+      - "traefik.http.routers.bndstr.tls.certresolver=letsencrypt"
+      - "traefik.http.services.bndstr.loadbalancer.server.port=80"
+      - "traefik.docker.network=coolify"
+    networks:
+      - app-net
+      - proxy-net
+
+  # ── DB Migration (one-shot) ─────────────────────
+  # Runs drizzle-kit migrate before API starts accepting traffic.
+  # Coolify will show this as a completed service after deploy.
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: ${COOLIFY_CONTAINER_NAME:-bndstr}-migrate
+    env_file:
+      - .env.api
+    environment:
+      - NODE_ENV=production
+    command: ["npx", "drizzle-kit", "migrate"]
+    networks:
+      - app-net
+    restart: "no"
+
+networks:
+  app-net:
+    name: bndstr-net
+  proxy-net:
+    external: true
+    name: ${DOCKER_NETWORK:-coolify}

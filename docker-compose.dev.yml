@@ -1,3 +1,9 @@
+# docker-compose.dev.yml — Local development stack
+#
+# Usage:
+#   docker compose -f docker-compose.dev.yml up postgres   # DB only (run API/Web natively)
+#   docker compose -f docker-compose.dev.yml up             # Full stack in containers
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -15,5 +21,45 @@ services:
       timeout: 5s
       retries: 5
 
+  api:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+      - api_node_modules:/app/packages/api/node_modules
+    ports:
+      - "3001:3001"
+    env_file:
+      - .env.api
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://bndstr:bndstr_dev@postgres:5432/bndstr
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: sh -c "corepack enable && pnpm install --filter @bndstr/api --filter @bndstr/shared && cd packages/api && pnpm run dev"
+    profiles:
+      - full
+
+  web:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+      - web_node_modules:/app/packages/web/node_modules
+    ports:
+      - "9000:9000"
+    env_file:
+      - .env.web
+    environment:
+      - API_URL=http://api:3001
+    depends_on:
+      - api
+    command: sh -c "corepack enable && pnpm install --filter @bndstr/web --filter @bndstr/shared && cd packages/web && pnpm run dev"
+    profiles:
+      - full
+
 volumes:
   postgres_dev_data:
+  api_node_modules:
+  web_node_modules:

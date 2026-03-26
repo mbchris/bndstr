@@ -25,7 +25,7 @@ Summary of current status:
 
 ✅ Set up Quasar frontend core (boot, stores, layouts, router)
 
-Add Docker Compose for local dev (PostgreSQL)
+✅ Add Docker Compose for local dev (PostgreSQL) + Coolify production deployment
 
 Port IndexPage (Dashboard) from Nuxt
 
