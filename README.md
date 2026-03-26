@@ -1,44 +1,76 @@
 # bndstr
 
-> Official website for the **bndstr** band — built with Nuxt 3, deployed with Docker.
+Multi-tenant band management project with:
+- Nuxt 3 application in the repository root (`pages/`, `server/api/`)
+- Hono API service in `packages/api`
+- Quasar web/mobile client in `packages/web` (with Capacitor support)
 
-## Quick Start
+## Prerequisites
+
+- Node.js 20+
+- pnpm (recommended via `corepack enable`)
+
+## Local Development
 
 ```bash
-# 1. Copy environment template
-cp .env.template .env
-# Edit .env with your values
+# install dependencies
+pnpm install
 
-# 2. Run in development mode (hot-reload)
-docker compose --profile dev up
+# copy env templates
+cp .env.api.template .env.api
+cp .env.web.template .env.web
 
-# 3. Run in production mode
-docker compose --profile prod up --build
+# run API + Web in parallel
+pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
+Default local ports:
+- API: `http://localhost:3001`
+- Web (Quasar dev server): `http://localhost:9000`
 
-## Project Structure
+## Useful Scripts
 
+```bash
+pnpm dev          # run all workspace dev scripts
+pnpm dev:api      # API only
+pnpm dev:web      # Web only
+pnpm build        # build all packages
+pnpm typecheck    # typecheck all packages
+pnpm lint         # lint all packages
 ```
-pages/           → Auto-routed pages (Home, Events, Music, About, Contact)
-components/      → Reusable Vue components
-layouts/         → Layout wrappers
-composables/     → Auto-imported composables
-server/api/      → Server API routes (Nitro)
-assets/css/      → Global styles & design tokens
-public/          → Static assets
-docs/            → Feature plan & backlog
-scripts/         → Automation scripts
+
+Database helpers:
+
+```bash
+pnpm db:generate
+pnpm db:migrate
+pnpm db:seed
+pnpm db:studio
 ```
 
-## Development
+## Docker
 
-See [AGENTS.md](AGENTS.md) for coding conventions and [AI_CONTEXT.md](AI_CONTEXT.md) for project context.
+Docker compose files are available for containerized workflows:
+- `docker-compose.dev.yml`: local PostgreSQL
+- `docker-compose.yml`: legacy Nuxt dev/prod profiles
 
-## Feature Roadmap
+## Repository Structure
 
-See [docs/feature_plan.md](docs/feature_plan.md) for the iteration-structured roadmap, synced to the [Iterative Development](https://github.com/users/mbchris/projects/3) project board.
+```text
+packages/api/      Hono API + Drizzle
+packages/web/      Quasar SPA + Capacitor targets
+packages/shared/   Shared types/utilities
+pages/             Nuxt pages (root app)
+server/api/        Nuxt/Nitro API routes (root app)
+docs/              Feature plan and backlog
+scripts/           Setup and automation scripts
+```
+
+## Documentation
+
+- Contributor conventions: [AGENTS.md](AGENTS.md)
+- Machine-readable project context: [AI_CONTEXT.md](AI_CONTEXT.md)
+- Iteration roadmap: [docs/feature_plan.md](docs/feature_plan.md)
 
 ## License
 

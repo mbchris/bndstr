@@ -4,13 +4,13 @@
 > Each iteration maps to a GitHub Projects **Iteration** value on the
 > [Iterative Development](https://github.com/users/mbchris/projects/3) board.
 
---- Bug Fixing
+## Bug Fixing
 
 **Goal:** Bugs are fixed
 
 - Each bug is fixed
 
-**Backlog:** [`docs/backlog/bugfixing.md`](../backlog/bugfixing.md)
+**Backlog:** [`docs/backlog/bugfixing.md`](./backlog/bugfixing.md)
 ---
 
 ## Iteration 1 — Foundation
@@ -23,7 +23,7 @@
 - Responsive layout with header, footer, and navigation
 - GitHub Actions CI (lint, typecheck, build)
 
-**Backlog:** [`docs/backlog/iter-1-foundation.md`](../backlog/iter-1-foundation.md)
+**Backlog:** [`docs/backlog/iter-1-foundation.md`](./backlog/iter-1-foundation.md)
 
 ---
 
@@ -36,7 +36,7 @@
 - Voting page: voting for songs
 - Admin page: admin functions
 
-**Backlog:** [`docs/backlog/iter-2-content.md`](../backlog/iter-2-content.md)
+**Backlog:** [`docs/backlog/iter-2-content.md`](./backlog/iter-2-content.md)
 
 ---
 
@@ -52,7 +52,7 @@
 - Calendar is scrollable month-wise
 - Calendar is responsive
 
-**Backlog:** [`docs/backlog/iter-2-content.md`](../backlog/iter-2-content.md)
+**Backlog:** [`docs/backlog/iter-3-calendar.md`](./backlog/iter-3-calendar.md)
 
 ---
 ## Iteration 4 — Voting
@@ -77,7 +77,7 @@
 - Show votes from others even they have not voted yet. All band members shall be shown.
 
 
-**Backlog:** [`docs/backlog/iter-4-voting.md`](../backlog/iter-4-voting.md)
+**Backlog:** [`docs/backlog/iter-4-voting.md`](./backlog/iter-4-voting.md)
 
 ---
 
@@ -100,7 +100,7 @@
 - Song properties can be edited.
 
 
-**Backlog:** [`docs/backlog/iter-5-setlist.md`](../backlog/iter-5-setlist.md)
+**Backlog:** [`docs/backlog/iter-5-setlist.md`](./backlog/iter-5-setlist.md)
 
 
 ## Iteration 6 - Rehearsal
@@ -115,7 +115,7 @@
 - Easy navigation between songs in the setlist
 - Summary of the rehearsal is shown at the end
 
-**Backlog:** [`docs/backlog/iter-6-rehearsal.md`](../backlog/iter-6-rehearsal.md)
+**Backlog:** [`docs/backlog/iter-6-rehearsal.md`](./backlog/iter-6-rehearsal.md)
 
 
 

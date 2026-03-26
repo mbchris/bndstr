@@ -1,47 +1,52 @@
 # AGENTS.md — AI Coding Agent Conventions
 
-> Guidelines for AI agents working on the **bndstr** Nuxt 3 web application.
+> Guidelines for AI agents working on the **bndstr** monorepo.
 
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Framework | Nuxt 3.16+ |
-| UI | Vue 3 (Composition API, `<script setup>`) |
+| Web App | Quasar + Vue 3 + TypeScript (`packages/web`) |
+| API | Hono + TypeScript (`packages/api`) |
+| Legacy App | Nuxt 3 root app (still present in repo root) |
 | Language | TypeScript (strict) |
-| Styles | Vanilla CSS with custom properties (see `assets/css/main.css`) |
-| Fonts | Inter (body), Outfit (display) via Google Fonts |
-| Server | Nitro (built into Nuxt) |
+| Styles | SCSS (Quasar app) + CSS custom properties (Nuxt root app) |
 | Deployment | Docker + docker-compose |
-| Package manager | npm |
+| Package manager | pnpm workspaces |
 
 ## Project Structure
 
 ```
-├── app.vue                  # Root component
-├── nuxt.config.ts           # Nuxt configuration
 ├── package.json
-├── Dockerfile               # Multi-stage production build
-├── docker-compose.yml       # Dev & prod profiles
-├── .env.template            # Environment config template
+├── pnpm-workspace.yaml
+├── Dockerfile
+├── docker-compose.yml
+├── docker-compose.dev.yml
+├── .env.api.template
+├── .env.web.template
 │
-├── pages/                   # Auto-routed pages
-├── components/              # Reusable Vue components
-├── layouts/                 # Layout wrappers
-├── composables/             # Auto-imported composables
-├── server/api/              # Server API routes
-├── assets/css/              # Global styles
-├── public/                  # Static assets
+├── packages/
+│   ├── api/                 # Hono API server
+│   ├── web/                 # Quasar web/mobile app
+│   └── shared/              # Shared types/utilities
+│
+├── pages/                   # Nuxt root app pages (legacy/current)
+├── server/api/              # Nuxt Nitro API routes (legacy/current)
 │
 ├── docs/
 │   ├── feature_plan.md      # Iteration roadmap
 │   └── backlog/             # Parseable task files per iteration
 │       ├── iter-1-foundation.md
 │       ├── iter-2-content.md
-│       └── iter-3-interactivity.md
+│       ├── iter-3-calendar.md
+│       ├── iter-4-voting.md
+│       ├── iter-5-setlist.md
+│       ├── iter-6-rehearsal.md
+│       └── bugfixing.md
 │
 ├── scripts/
-│   └── sync-backlog.sh      # GitHub Issues & Projects sync
+│   ├── sync-backlog.sh      # GitHub Issues & Projects sync
+│   └── setup-capacitor.ps1
 │
 └── .github/workflows/
     └── sync-backlog.yml     # Auto-sync on push
@@ -49,11 +54,11 @@
 
 ## Coding Standards
 
-1. **Composition API only** — use `<script setup lang="ts">` in all `.vue` files
-2. **Auto-imports** — Nuxt auto-imports Vue APIs and composables; don't add explicit imports for `ref`, `computed`, `useHead`, etc.
-3. **CSS custom properties** — use design tokens from `assets/css/main.css` (e.g. `var(--color-accent)`)
-4. **Component naming** — PascalCase for components, kebab-case for HTML attributes
-5. **Server routes** — use `server/api/` with Nitro conventions (`*.get.ts`, `*.post.ts`)
+1. **TypeScript strictness** — keep strict typing; avoid `any` unless unavoidable
+2. **Vue style** — use Composition API and `<script setup lang="ts">` in Nuxt Vue files
+3. **Quasar app conventions** — follow existing structure in `packages/web/src/*` (boot files, stores, pages)
+4. **API conventions** — keep route handlers under `packages/api/src/routes/*`; preserve middleware chain
+5. **Nuxt root app** — if editing root app files (`pages`, `server/api`), follow Nuxt/Nitro naming conventions
 
 ## Iteration Workflow
 
@@ -73,21 +78,22 @@ Fixed bugs need to be ticked off.
 ## Running Locally
 
 ```bash
-# Copy env template
-cp .env.template .env
+# Install workspace dependencies
+pnpm install
 
-# Development (hot-reload via Docker)
-docker compose --profile dev up
+# Copy environment templates
+cp .env.api.template .env.api
+cp .env.web.template .env.web
 
-# Production
-docker compose --profile prod up --build
+# Run API + Web in dev mode
+pnpm dev
 ```
 
 ## Environment
 
-All credentials, API keys, and configuration live in `.env` (never committed).
-See `.env.template` for the full list of variables.
+Credentials and API keys must not be committed.
+Use `.env.api` and `.env.web` (copied from templates) for local development.
 
-## Excecution of external commands
+## Execution of external commands
 
-Executing commands often get stuck. Try to excecute, but if nothing happens within 30 seconds, let the user execute the command manually. Make copy&pasteable scripts for this.
+Executing commands can get stuck. Try to execute them, but if nothing happens within 30 seconds, ask the user to run them manually and provide copy-pasteable scripts.
