@@ -45,8 +45,18 @@ echo "Using environment configuration: $env_file"
 export ENV_FILE="$env_file"
 
 case "$command" in
-  start|dev)
+  start|dev|run)
     echo "Starting development server ($env_profile)..."
+    if [ "$env_profile" == "local" ]; then
+      echo "Ensuring local PostgreSQL is running (docker-compose.dev.yml)..."
+      docker compose -f docker-compose.dev.yml up -d postgres
+      if ! ls packages/api/src/db/migrations/*.sql >/dev/null 2>&1; then
+        echo "No migration files found. Generating initial migration..."
+        docker compose --profile dev run --rm dev sh -c "corepack enable && corepack prepare pnpm@latest --activate && pnpm install && pnpm --filter @bndstr/api run db:generate"
+      fi
+      echo "Running local database migrations..."
+      docker compose --profile dev run --rm dev sh -c "corepack enable && corepack prepare pnpm@latest --activate && pnpm install && pnpm --filter @bndstr/api run db:migrate"
+    fi
     docker compose --profile dev up
     ;;
   build)
@@ -83,7 +93,7 @@ case "$command" in
     docker compose --profile dev run --rm dev npx -y tsx scripts/seed.ts
     ;;
   *)
-    echo "Usage: ./do {start|build|deploy|logs|stop|test} [local|staging|production]"
+    echo "Usage: ./do {start|dev|run|build|deploy|logs|stop|test|seed} [local|staging|production]"
     exit 1
     ;;
 esac

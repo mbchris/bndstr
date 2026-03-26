@@ -41,7 +41,7 @@ async function loginGoogle() {
   loadingGoogle.value = true
   error.value = null
   try {
-    await authClient.signIn.social({ provider: 'google', callbackURL: '/' })
+    await authClient.signIn.social({ provider: 'google', callbackURL: window.location.origin + '/' })
   } catch (e: unknown) {
     error.value = e instanceof Error ? e.message : 'Login failed'
     loadingGoogle.value = false
@@ -52,7 +52,7 @@ async function loginGithub() {
   loadingGithub.value = true
   error.value = null
   try {
-    await authClient.signIn.social({ provider: 'github', callbackURL: '/' })
+    await authClient.signIn.social({ provider: 'github', callbackURL: window.location.origin + '/' })
   } catch (e: unknown) {
     error.value = e instanceof Error ? e.message : 'Login failed'
     loadingGithub.value = false
