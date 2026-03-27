@@ -122,7 +122,7 @@
 ## Iteration 7 - Starting page
 
 **Goal:** a modern starting page with Login Features 
-- Start page when logged out has assets/rehearsal_dyn_v.mp4 in endless loop playing in the Background
+- Start page when logged out has assets/rehearsal_dyn_v2.mp4 in endless loop playing in the Background
 - Login Dialog is is on a layer over the Background Video.
 - The Login page has a text box Above the Login with dummy text "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum."
 

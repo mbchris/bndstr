@@ -3,7 +3,7 @@
     <q-page-container>
       <q-page class="auth-start-page">
         <video class="auth-video-bg" autoplay muted loop playsinline>
-          <source src="/assets/rehearsal_dyn_v.mp4" type="video/mp4" />
+          <source src="/assets/rehearsal_dyn_v2.mp4" type="video/mp4" />
         </video>
 
         <div class="auth-overlay">
