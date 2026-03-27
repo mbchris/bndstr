@@ -14,16 +14,26 @@ import { admin } from './routes/admin.js'
 import { billing } from './routes/billing.js'
 
 const app = new Hono()
-function cloneRequestWithPath(req: Request, pathname: string) {
+type AuthRequest = Parameters<typeof auth.handler>[0]
+type RequestLike = {
+  url: string
+  method: string
+  headers: RequestInit['headers']
+  body: RequestInit['body'] | null
+}
+
+function cloneRequestWithPath(req: RequestLike, pathname: string): AuthRequest {
   const url = new URL(req.url)
   url.pathname = pathname
   const init: RequestInit & { duplex?: 'half' } = {
     method: req.method,
     headers: req.headers,
-    body: req.body,
   }
-  if (req.body) init.duplex = 'half'
-  return new Request(url.toString(), init)
+  if (req.body !== null) {
+    init.body = req.body
+    init.duplex = 'half'
+  }
+  return new Request(url.toString(), init) as AuthRequest
 }
 
 // Global middleware
@@ -44,10 +54,10 @@ app.use(
 app.get('/health', (c) => c.json({ ok: true, version: process.env.GIT_REV ?? 'dev' }))
 
 // Routes
-const authMethods = ['GET', 'POST', 'OPTIONS'] as const
+const authMethods = ['GET', 'POST', 'OPTIONS']
 
-app.on(authMethods, '/auth', (c) => auth.handler(c.req.raw))
-app.on(authMethods, '/auth/*', (c) => auth.handler(c.req.raw))
+app.on(authMethods, '/auth', (c) => auth.handler(c.req.raw as AuthRequest))
+app.on(authMethods, '/auth/*', (c) => auth.handler(c.req.raw as AuthRequest))
 
 // Compatibility alias for old frontend bundles still calling /api/auth/*
 app.on(authMethods, '/api/auth', (c) => {
