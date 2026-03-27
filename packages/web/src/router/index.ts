@@ -24,11 +24,42 @@ export default route(function (/* { store, ssrContext } */) {
 
   router.beforeEach(async (to) => {
     const auth = useAuthStore()
+    const ensureBandsLoaded = async () => {
+      if (auth.bands.length > 0) return
+
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (auth.token) {
+        headers.Authorization = `Bearer ${auth.token}`
+      }
+
+      const base = process.env.API_URL ?? ''
+      const res = await fetch(`${base}/api/bands`, {
+        method: 'GET',
+        headers,
+        credentials: 'include',
+      })
+
+      if (!res.ok) {
+        throw new Error(`Failed to load bands (${res.status})`)
+      }
+
+      const bands = (await res.json()) as typeof auth.bands
+      auth.setBands(bands)
+    }
 
     if (to.meta.requiresAuth && !auth.isAuthenticated) {
       // Try to restore session from cookie/token
       await auth.loadSession()
       if (!auth.isAuthenticated) {
+        return { path: '/login', query: { redirect: to.fullPath } }
+      }
+    }
+
+    if (to.meta.requiresAuth) {
+      try {
+        await ensureBandsLoaded()
+      } catch {
+        auth.clearSession()
         return { path: '/login', query: { redirect: to.fullPath } }
       }
     }

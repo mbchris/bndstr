@@ -3,10 +3,21 @@
     <q-header bordered class="bg-transparent">
       <q-toolbar class="q-px-sm q-px-md-md">
         <q-toolbar-title>
-          <span class="text-weight-bold" style="letter-spacing: -0.03em">bndstr</span>
+          <router-link to="/" class="brand-link">
+            <img :src="activeLogoSrc" alt="bndstr logo" class="brand-logo" />
+          </router-link>
         </q-toolbar-title>
 
         <div class="row items-center q-gutter-xs q-gutter-sm-md no-wrap">
+          <q-btn
+            flat
+            round
+            dense
+            :icon="$q.dark.isActive ? 'light_mode' : 'dark_mode'"
+            @click="toggleDarkMode"
+            :title="$q.dark.isActive ? 'Switch to light mode' : 'Switch to dark mode'"
+          />
+
           <q-btn
             flat
             dense
@@ -15,26 +26,41 @@
             @click="toggleLocale"
           />
 
-          <q-select
-            v-if="authStore.bands.length > 0"
-            v-model="activeBandId"
-            :options="bandOptions"
-            dense
-            outlined
-            dark
-            emit-value
-            map-options
-            style="min-width: 160px"
-            class="gt-xs"
-          />
+          <q-btn flat round dense icon="account_circle">
+            <q-menu anchor="bottom right" self="top right">
+              <q-list style="min-width: 260px">
+                <q-item-label header>All Bands</q-item-label>
+                <q-item
+                  v-for="band in authStore.bands"
+                  :key="band.id"
+                  clickable
+                  v-close-popup
+                  @click="selectBand(band.id)"
+                >
+                  <q-item-section>{{ band.name }}</q-item-section>
+                  <q-item-section side>
+                    <q-badge v-if="activeBandId === band.id" color="primary">Active</q-badge>
+                  </q-item-section>
+                </q-item>
 
-          <q-btn flat round dense icon="add" @click="$router.push('/band/new')" :title="t('common.add')" />
-          <q-btn flat round dense icon="logout" @click="handleLogout" :title="t('nav.signOut')" />
+                <q-separator />
+                <q-item clickable v-close-popup @click="goManageBands">
+                  <q-item-section>Manage Bands</q-item-section>
+                </q-item>
+                <q-item disable>
+                  <q-item-section>Role: {{ activeBandRole }}</q-item-section>
+                </q-item>
+                <q-item clickable v-close-popup @click="handleLogout">
+                  <q-item-section>Logout</q-item-section>
+                </q-item>
+              </q-list>
+            </q-menu>
+          </q-btn>
         </div>
       </q-toolbar>
 
       <div class="top-nav q-px-sm q-pb-sm">
-        <div class="row items-center no-wrap top-nav-scroll">
+        <div class="row items-center no-wrap top-nav-scroll justify-center">
           <q-btn
             v-for="link in navLinks"
             :key="link.to"
@@ -58,20 +84,20 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { useQuasar } from 'quasar'
 import { useAuthStore } from '../stores/auth'
 import { useBandStore } from '../stores/band'
-import { apiJson } from '../boot/api'
 import { useI18n } from '../composables/useI18n'
+import defaultLogoDark from '../assets/bndstr_rect_wh.webp'
+import defaultLogoLight from '../assets/bndstr_rect_bl.webp'
 
 const authStore = useAuthStore()
 const bandStore = useBandStore()
 const route = useRoute()
+const router = useRouter()
 const { t, locale, toggleLocale } = useI18n()
-
-const bandOptions = computed(() =>
-  authStore.bands.map((b) => ({ label: b.name, value: b.id })),
-)
+const $q = useQuasar()
 
 const activeBandId = computed({
   get: () => authStore.activeBandId,
@@ -79,6 +105,14 @@ const activeBandId = computed({
     authStore.setActiveBand(id)
     bandStore.fetchMembers()
   },
+})
+
+const activeBandRole = computed(() => authStore.activeBand?.role ?? 'none')
+
+const activeLogoSrc = computed(() => {
+  const customLogo = authStore.activeBand?.logo
+  if (customLogo) return customLogo
+  return $q.dark.isActive ? defaultLogoDark : defaultLogoLight
 })
 
 const isAdmin = computed(() => {
@@ -108,14 +142,16 @@ function isActiveRoute(path: string) {
   return route.path === path
 }
 
-async function loadBands() {
-  try {
-    const bands = await apiJson<typeof authStore.bands>('/bands')
-    authStore.setBands(bands)
-  } catch {
-    authStore.clearSession()
-    window.location.href = '/login'
-  }
+function toggleDarkMode() {
+  $q.dark.set(!$q.dark.isActive)
+}
+
+function selectBand(id: number) {
+  activeBandId.value = id
+}
+
+function goManageBands() {
+  router.push('/bands/manage')
 }
 
 async function handleLogout() {
@@ -124,8 +160,6 @@ async function handleLogout() {
   authStore.clearSession()
   window.location.href = '/login'
 }
-
-loadBands()
 </script>
 
 <style scoped>
@@ -153,5 +187,18 @@ loadBands()
   background: rgba(99, 102, 241, 0.16);
   border-color: rgba(129, 140, 248, 0.35);
   color: #a5b4fc;
+}
+
+.brand-link {
+  display: inline-flex;
+  align-items: center;
+}
+
+.brand-logo {
+  display: block;
+  width: auto;
+  height: 34px;
+  max-width: 190px;
+  object-fit: contain;
 }
 </style>

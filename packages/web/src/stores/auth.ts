@@ -15,6 +15,7 @@ export type BandMembership = {
   slug: string
   plan: string
   role: string
+  logo?: string | null
 }
 
 export const useAuthStore = defineStore('auth', () => {
@@ -74,6 +75,13 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  function setActiveBandLogo(logo: string | null) {
+    const currentBand = bands.value.find((b) => b.id === activeBandId.value)
+    if (currentBand) {
+      currentBand.logo = logo
+    }
+  }
+
   function clearSession() {
     user.value = null
     token.value = null
@@ -94,6 +102,7 @@ export const useAuthStore = defineStore('auth', () => {
     setToken,
     setActiveBand,
     setBands,
+    setActiveBandLogo,
     clearSession,
   }
 })

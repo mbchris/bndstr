@@ -1,4 +1,6 @@
 import { Hono } from 'hono'
+import { zValidator } from '@hono/zod-validator'
+import { z } from 'zod'
 import { requireAuth } from '../middleware/auth.js'
 import { requireTenant, type TenantEnv } from '../middleware/tenant.js'
 import { requireRole } from '../middleware/rbac.js'
@@ -46,6 +48,57 @@ admin.get('/db/export', async (c) => {
     votes: votesData,
     calendarEvents: events,
   })
+})
+
+const updateLogoSchema = z.object({
+  logoDataUrl: z.string().min(1),
+})
+
+const MAX_LOGO_BYTES = 150 * 1024
+
+function getDataUrlBytes(dataUrl: string) {
+  const commaIndex = dataUrl.indexOf(',')
+  if (commaIndex === -1) return 0
+  const base64 = dataUrl.slice(commaIndex + 1)
+  const padding = (base64.match(/=+$/)?.[0].length ?? 0)
+  return Math.floor((base64.length * 3) / 4) - padding
+}
+
+// GET /admin/logo
+admin.get('/logo', async (c) => {
+  const bandId = c.get('bandId')
+  const [band] = await db.select({ logo: bands.logo }).from(bands).where(eq(bands.id, bandId)).limit(1)
+  return c.json({ logo: band?.logo ?? null })
+})
+
+// PUT /admin/logo
+admin.put('/logo', zValidator('json', updateLogoSchema), async (c) => {
+  const bandId = c.get('bandId')
+  const { logoDataUrl } = c.req.valid('json')
+
+  if (!logoDataUrl.startsWith('data:image/webp;base64,')) {
+    return c.json({ error: 'Logo must be a WEBP data URL' }, 400)
+  }
+
+  const bytes = getDataUrlBytes(logoDataUrl)
+  if (bytes > MAX_LOGO_BYTES) {
+    return c.json({ error: 'Logo exceeds 150KB limit' }, 400)
+  }
+
+  const [updated] = await db
+    .update(bands)
+    .set({ logo: logoDataUrl })
+    .where(eq(bands.id, bandId))
+    .returning({ logo: bands.logo })
+
+  return c.json({ logo: updated?.logo ?? null })
+})
+
+// DELETE /admin/logo
+admin.delete('/logo', async (c) => {
+  const bandId = c.get('bandId')
+  await db.update(bands).set({ logo: null }).where(eq(bands.id, bandId))
+  return c.json({ ok: true })
 })
 
 // GET /admin/calendar/export — export only calendar events as JSON

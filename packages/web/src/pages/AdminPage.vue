@@ -44,6 +44,65 @@
 
         <!-- Sidebar -->
         <div class="col-12 col-lg">
+          <!-- Band Logo -->
+          <q-card flat bordered class="q-mb-md">
+            <q-card-section>
+              <div class="text-subtitle1 text-weight-bold">Band Logo</div>
+            </q-card-section>
+            <q-card-section class="q-gutter-sm">
+              <q-img
+                v-if="logoPreviewSrc"
+                :src="logoPreviewSrc"
+                style="width: 100%; max-width: 420px; aspect-ratio: 830 / 460; border-radius: 10px"
+                fit="contain"
+              />
+              <div v-else class="text-caption text-grey">No custom logo uploaded.</div>
+
+              <div class="row q-col-gutter-sm">
+                <div class="col-12 col-sm-auto">
+                  <q-btn
+                    color="primary"
+                    icon="image"
+                    :label="pendingLogoDataUrl ? 'Change selection' : 'Select logo'"
+                    :loading="logoProcessing"
+                    @click="logoInputRef?.click()"
+                  />
+                </div>
+                <div class="col-12 col-sm-auto" v-if="pendingLogoDataUrl">
+                  <q-btn
+                    color="positive"
+                    icon="save"
+                    label="Save logo"
+                    :loading="logoUploading"
+                    @click="uploadLogo"
+                  />
+                </div>
+                <div class="col-12 col-sm-auto" v-if="authStore.activeBand?.logo">
+                  <q-btn
+                    color="negative"
+                    outline
+                    icon="delete"
+                    label="Remove logo"
+                    :loading="logoUploading"
+                    @click="removeLogo"
+                  />
+                </div>
+              </div>
+
+              <input
+                ref="logoInputRef"
+                type="file"
+                accept="image/*"
+                class="hidden"
+                style="display:none"
+                @change="handleLogoSelected"
+              />
+              <div class="text-caption text-grey">
+                Max 150KB. Uploaded logos are center-cropped to 830x460 and converted to WEBP.
+              </div>
+            </q-card-section>
+          </q-card>
+
           <!-- System Status -->
           <q-card flat bordered>
             <q-card-section>
@@ -143,13 +202,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useQuasar, type QTableColumn } from 'quasar'
 import { useBandStore } from '../stores/band'
+import { useAuthStore } from '../stores/auth'
 import { apiJson, api } from '../boot/api'
 
 const $q = useQuasar()
 const bandStore = useBandStore()
+const authStore = useAuthStore()
 
 const columns: QTableColumn[] = [
   { name: 'name', label: 'Name', field: 'name', align: 'left' },
@@ -167,6 +228,13 @@ const isCalendarImporting = ref(false)
 const removingId = ref<string | null>(null)
 const importInputRef = ref<HTMLInputElement | null>(null)
 const calendarImportRef = ref<HTMLInputElement | null>(null)
+const logoInputRef = ref<HTMLInputElement | null>(null)
+const logoProcessing = ref(false)
+const logoUploading = ref(false)
+const pendingLogoDataUrl = ref<string | null>(null)
+
+const logoPreviewSrc = computed(() => pendingLogoDataUrl.value ?? authStore.activeBand?.logo ?? null)
+const MAX_LOGO_BYTES = 150 * 1024
 
 // Add member
 const showAddModal = ref(false)
@@ -221,6 +289,119 @@ async function removeMember(id: string) {
 // System status
 async function fetchStatus() {
   try { sysStatus.value = await apiJson<any>('/admin/status') } catch {}
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onerror = () => reject(new Error('Unable to read image'))
+    reader.onload = () => resolve(String(reader.result))
+    reader.readAsDataURL(blob)
+  })
+}
+
+function canvasToWebpBlob(canvas: HTMLCanvasElement, quality: number): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        reject(new Error('Unable to encode logo image'))
+        return
+      }
+      resolve(blob)
+    }, 'image/webp', quality)
+  })
+}
+
+async function createCroppedLogo(file: File): Promise<string> {
+  const url = URL.createObjectURL(file)
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const image = new Image()
+      image.onload = () => resolve(image)
+      image.onerror = () => reject(new Error('Invalid image file'))
+      image.src = url
+    })
+
+    const width = 830
+    const height = 460
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('Unable to process image')
+
+    const scale = Math.max(width / img.naturalWidth, height / img.naturalHeight)
+    const drawWidth = img.naturalWidth * scale
+    const drawHeight = img.naturalHeight * scale
+    const offsetX = (width - drawWidth) / 2
+    const offsetY = (height - drawHeight) / 2
+    ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight)
+
+    const qualities = [0.92, 0.86, 0.8, 0.74, 0.68, 0.62, 0.56]
+    for (const quality of qualities) {
+      const blob = await canvasToWebpBlob(canvas, quality)
+      if (blob.size <= MAX_LOGO_BYTES) {
+        return blobToDataUrl(blob)
+      }
+    }
+    throw new Error('Image is too detailed to fit 150KB after cropping')
+  } finally {
+    URL.revokeObjectURL(url)
+  }
+}
+
+async function handleLogoSelected(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+  if (!file.type.startsWith('image/')) {
+    $q.notify({ message: 'Please select an image file', color: 'negative' })
+    return
+  }
+
+  logoProcessing.value = true
+  try {
+    pendingLogoDataUrl.value = await createCroppedLogo(file)
+  } catch (e: any) {
+    $q.notify({ message: e.message || 'Failed to process logo', color: 'negative' })
+  } finally {
+    logoProcessing.value = false
+  }
+}
+
+async function uploadLogo() {
+  if (!pendingLogoDataUrl.value) return
+  logoUploading.value = true
+  try {
+    const result = await apiJson<{ logo: string | null }>('/admin/logo', {
+      method: 'PUT',
+      body: JSON.stringify({ logoDataUrl: pendingLogoDataUrl.value }),
+    })
+    authStore.setActiveBandLogo(result.logo ?? null)
+    pendingLogoDataUrl.value = null
+    $q.notify({ message: 'Logo updated', color: 'positive' })
+  } catch (e: any) {
+    $q.notify({ message: e.message || 'Failed to upload logo', color: 'negative' })
+  } finally {
+    logoUploading.value = false
+  }
+}
+
+async function removeLogo() {
+  $q.dialog({ title: 'Remove Logo', message: 'Remove the custom band logo?', cancel: true }).onOk(async () => {
+    logoUploading.value = true
+    try {
+      await apiJson('/admin/logo', { method: 'DELETE' })
+      authStore.setActiveBandLogo(null)
+      pendingLogoDataUrl.value = null
+      $q.notify({ message: 'Logo removed', color: 'positive' })
+    } catch (e: any) {
+      $q.notify({ message: e.message || 'Failed to remove logo', color: 'negative' })
+    } finally {
+      logoUploading.value = false
+    }
+  })
 }
 
 // DB export/import

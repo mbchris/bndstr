@@ -12,6 +12,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'calendar', component: () => import('../pages/CalendarPage.vue') },
       { path: 'stand', component: () => import('../pages/StandPage.vue') },
       { path: 'admin', component: () => import('../pages/AdminPage.vue'), meta: { requiresAdmin: true } },
+      { path: 'bands/manage', component: () => import('../pages/ManageBandsPage.vue') },
       { path: 'band/new', component: () => import('../pages/BandCreatePage.vue') },
       { path: 'billing', component: () => import('../pages/BillingPage.vue') },
     ],

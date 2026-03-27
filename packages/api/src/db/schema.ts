@@ -17,6 +17,7 @@ export const bands = pgTable('bands', {
   name: text('name').notNull(),
   slug: text('slug').notNull().unique(),
   plan: text('plan').notNull().default('free'), // 'free' | 'band' | 'pro'
+  logo: text('logo'),
   stripeCustomerId: text('stripe_customer_id'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })

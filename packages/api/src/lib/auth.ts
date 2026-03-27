@@ -20,7 +20,7 @@ export const auth = betterAuth({
 
   secret: process.env.AUTH_SECRET,
   baseURL: process.env.API_URL ?? 'http://localhost:3001',
-  basePath: '/api/auth',
+  basePath: '/auth',
 
   trustedOrigins: (process.env.CORS_ORIGINS ?? 'http://localhost:9000').split(','),
 

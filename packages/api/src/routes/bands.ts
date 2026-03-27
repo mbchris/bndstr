@@ -19,6 +19,7 @@ bands.get('/', requireAuth, async (c) => {
       name: bandsTable.name,
       slug: bandsTable.slug,
       plan: bandsTable.plan,
+      logo: bandsTable.logo,
       role: bandMembers.role,
     })
     .from(bandMembers)
@@ -59,6 +60,7 @@ bands.get('/:id', requireAuth, requireTenant, async (c) => {
 // Update band (admin+)
 const updateBandSchema = z.object({
   name: z.string().min(1).max(100).optional(),
+  slug: z.string().min(1).max(50).regex(/^[a-z0-9-]+$/).optional(),
 })
 
 bands.patch(
@@ -78,6 +80,13 @@ bands.patch(
     return c.json(updated)
   },
 )
+
+// Delete band (owner only)
+bands.delete('/:id', requireAuth, requireTenant, requireRole('owner'), async (c) => {
+  const bandId = c.get('bandId')
+  await db.delete(bandsTable).where(eq(bandsTable.id, bandId))
+  return c.json({ ok: true })
+})
 
 // List band members
 bands.get('/:id/members', requireAuth, requireTenant, async (c) => {
