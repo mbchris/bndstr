@@ -2,7 +2,7 @@ import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
-import { auth } from './lib/auth.js'
+import { auth, AUTH_BASE_PATH } from './lib/auth.js'
 import { bands } from './routes/bands.js'
 import { songs } from './routes/songs.js'
 import { votes } from './routes/votes.js'
@@ -58,18 +58,21 @@ app.get('/health', (c) => c.json({ ok: true, version: process.env.GIT_REV ?? 'de
 
 // Routes
 const authMethods = ['GET', 'POST', 'OPTIONS']
+const authCanonical = AUTH_BASE_PATH.replace(/\/+$/, '')
+const authLegacyPaths = ['/auth', '/api/auth'].filter((p) => p !== authCanonical)
 
-app.on(authMethods, '/auth', (c) => auth.handler(c.req.raw as AuthRequest))
-app.on(authMethods, '/auth/*', (c) => auth.handler(c.req.raw as AuthRequest))
+app.on(authMethods, authCanonical, (c) => auth.handler(c.req.raw as AuthRequest))
+app.on(authMethods, `${authCanonical}/*`, (c) => auth.handler(c.req.raw as AuthRequest))
 
-// Compatibility alias for old frontend bundles still calling /api/auth/*
-app.on(authMethods, '/api/auth', (c) => {
-  return auth.handler(cloneRequestWithPath(c.req.raw, '/auth'))
-})
-app.on(authMethods, '/api/auth/*', (c) => {
-  const aliasPath = c.req.path.replace(/^\/api\/auth/, '/auth')
-  return auth.handler(cloneRequestWithPath(c.req.raw, aliasPath))
-})
+for (const legacyBase of authLegacyPaths) {
+  app.on(authMethods, legacyBase, (c) => {
+    return auth.handler(cloneRequestWithPath(c.req.raw, authCanonical))
+  })
+  app.on(authMethods, `${legacyBase}/*`, (c) => {
+    const aliasPath = c.req.path.replace(new RegExp(`^${legacyBase}`), authCanonical)
+    return auth.handler(cloneRequestWithPath(c.req.raw, aliasPath))
+  })
+}
 app.route('/api/bands', bands)
 app.route('/api/songs', songs)
 app.route('/api/votes', votes)

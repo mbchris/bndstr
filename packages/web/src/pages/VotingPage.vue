@@ -59,7 +59,7 @@
                       size="22px"
                       :class="getMemberVoteRingClass(song, member.id)"
                       :color="member.image ? undefined : getMemberFallbackColor(song, member.id)"
-                      :text-color="member.image ? undefined : 'grey-1'"
+                      :text-color="member.image ? undefined : 'white'"
                     >
                       <img v-if="member.image" :src="member.image" />
                       <span v-else style="font-size: 10px">{{ member.name?.charAt(0) }}</span>
@@ -208,14 +208,14 @@ function getMemberVoteRingClass(song: Song, userId: string) {
 
 function getMemberFallbackColor(song: Song, userId: string) {
   const vote = song.allVotes?.find((v) => v.userId === userId)
-  if (!vote) return 'grey-6'
-  return ['red-8', 'orange-8', 'blue-8', 'green-8'][vote.score] || 'grey-6'
+  if (!vote) return 'blue-grey-8'
+  return ['red-10', 'deep-orange-10', 'blue-10', 'green-10'][vote.score] || 'blue-grey-8'
 }
 
 function getMemberVoteLabel(song: Song, userId: string) {
   const vote = song.allVotes?.find((v) => v.userId === userId)
   if (!vote) return '-'
-  return voteLabels[vote.score] || '-'
+  return String(vote.score)
 }
 
 // Voting

@@ -164,7 +164,8 @@ async function handleLogout() {
 
 <style scoped>
 .top-nav {
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(243, 244, 246, 0.92);
+  border-top: 1px solid rgba(17, 24, 39, 0.08);
 }
 
 .top-nav-scroll {
@@ -181,12 +182,13 @@ async function handleLogout() {
   border-radius: 999px;
   border: 1px solid transparent;
   white-space: nowrap;
+  color: #374151;
 }
 
 .top-nav-btn--active {
-  background: rgba(99, 102, 241, 0.16);
-  border-color: rgba(129, 140, 248, 0.35);
-  color: #a5b4fc;
+  background: rgba(148, 163, 184, 0.24);
+  border-color: rgba(100, 116, 139, 0.42);
+  color: #111827;
 }
 
 .brand-link {

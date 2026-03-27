@@ -1,1 +1,1 @@
-ALTER TABLE "bands" ADD COLUMN "logo" text;
+ALTER TABLE "bands" ADD COLUMN IF NOT EXISTS "logo" text;

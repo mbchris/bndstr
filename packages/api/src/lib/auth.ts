@@ -4,6 +4,20 @@ import { organization } from 'better-auth/plugins'
 import { db } from '../db/index.js'
 import * as schema from '../db/schema.js'
 
+function resolveAuthBasePath(apiUrl: string): string {
+  try {
+    const parsed = new URL(apiUrl)
+    const path = parsed.pathname.replace(/\/+$/, '')
+    const prefix = path === '' || path === '/' ? '' : path
+    return `${prefix}/auth`
+  } catch {
+    return '/auth'
+  }
+}
+
+const resolvedApiUrl = process.env.API_URL ?? 'http://localhost:3001'
+export const AUTH_BASE_PATH = resolveAuthBasePath(resolvedApiUrl)
+
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: 'pg',
@@ -19,8 +33,8 @@ export const auth = betterAuth({
   }),
 
   secret: process.env.AUTH_SECRET,
-  baseURL: process.env.API_URL ?? 'http://localhost:3001',
-  basePath: '/auth',
+  baseURL: resolvedApiUrl,
+  basePath: AUTH_BASE_PATH,
 
   trustedOrigins: (process.env.CORS_ORIGINS ?? 'http://localhost:9000')
     .split(/[;,]/)

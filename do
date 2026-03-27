@@ -63,8 +63,15 @@ run_migrations_if_needed() {
     return
   fi
 
+  # Legacy local DB bootstrap: schema exists but Drizzle tracking table is missing.
+  # Apply idempotent compatibility patches so current code can run without destructive reset.
+  echo "Applying compatibility schema repairs for legacy local database..."
+  "${DB_COMPOSE[@]}" exec -T postgres psql -U bndstr -d bndstr -v ON_ERROR_STOP=1 -c \
+    "ALTER TABLE public.bands ADD COLUMN IF NOT EXISTS logo text;"
+
   echo "Skipping migrations: schema exists but Drizzle tracking table is missing."
   echo "Reason: running initial migration here would fail on already existing tables."
+  echo "Applied non-destructive compatibility fixes (if needed)."
 }
 
 case "$command" in
