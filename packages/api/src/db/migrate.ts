@@ -1,7 +1,8 @@
 import { migrate } from 'drizzle-orm/node-postgres/migrator'
 import { db, pool } from './index.js'
 
-async function runMigrations() {
+export async function runMigrations(options: { closePoolOnDone?: boolean } = {}) {
+  const { closePoolOnDone = false } = options
   const started = Date.now()
   try {
     await migrate(db, { migrationsFolder: new URL('./migrations', import.meta.url).pathname })
@@ -9,10 +10,17 @@ async function runMigrations() {
     console.log(`DB migrations applied in ${ms}ms`)
   } catch (error) {
     console.error('DB migration failed', error)
-    process.exitCode = 1
+    throw error
   } finally {
-    await pool.end().catch(() => undefined)
+    if (closePoolOnDone) {
+      await pool.end().catch(() => undefined)
+    }
   }
 }
 
-void runMigrations()
+// Keep standalone migration script behavior.
+if ((process.argv[1] ?? '').includes('/db/migrate')) {
+  void runMigrations({ closePoolOnDone: true }).catch(() => {
+    process.exitCode = 1
+  })
+}

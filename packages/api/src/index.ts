@@ -12,6 +12,7 @@ import { rehearsals } from './routes/rehearsals.js'
 import { usersRouter as users } from './routes/users.js'
 import { admin } from './routes/admin.js'
 import { billing } from './routes/billing.js'
+import { runMigrations } from './db/migrate.js'
 
 const app = new Hono()
 type AuthRequest = Parameters<typeof auth.handler>[0]
@@ -85,8 +86,16 @@ app.route('/api/billing', billing)
 
 const port = Number(process.env.PORT ?? 3001)
 
-serve({ fetch: app.fetch, port }, () => {
-  console.log(`bndstr API running on http://localhost:${port} (auth: ${authCanonical})`)
+async function bootstrap() {
+  await runMigrations()
+  serve({ fetch: app.fetch, port }, () => {
+    console.log(`bndstr API running on http://localhost:${port} (auth: ${authCanonical})`)
+  })
+}
+
+void bootstrap().catch((error) => {
+  console.error('API startup failed', error)
+  process.exit(1)
 })
 
 export type AppType = typeof app
