@@ -32,7 +32,7 @@ export default route(function (/* { store, ssrContext } */) {
         headers.Authorization = `Bearer ${auth.token}`
       }
 
-      const base = process.env.API_URL ?? ''
+      const base = (process.env.API_URL ?? '').replace(/\/+$/, '').replace(/\/api$/, '')
       const res = await fetch(`${base}/api/bands`, {
         method: 'GET',
         headers,

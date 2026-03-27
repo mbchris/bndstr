@@ -25,7 +25,7 @@ export const api = async (path: string, init: RequestInit = {}): Promise<Respons
     headers['X-Band-Id'] = String(authStore.activeBandId)
   }
 
-  const base = process.env.API_URL ?? ''
+  const base = (process.env.API_URL ?? '').replace(/\/+$/, '').replace(/\/api$/, '')
   const res = await fetch(`${base}/api${path}`, { ...init, headers })
 
   if (res.status === 401) {

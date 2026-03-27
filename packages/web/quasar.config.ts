@@ -1,7 +1,9 @@
 import { configure } from 'quasar/wrappers'
 
 export default configure(function (/* ctx */) {
-  const apiUrl = process.env.API_URL || `http://localhost:${process.env.PORT || '3001'}`
+  const apiTarget = process.env.API_TARGET || `http://localhost:${process.env.API_PORT || '3001'}`
+  const rawApiUrl = (process.env.API_URL || '').trim()
+  const apiUrl = rawApiUrl.replace(/\/+$/, '').replace(/\/api$/, '')
 
   return {
     eslint: {
@@ -30,7 +32,7 @@ export default configure(function (/* ctx */) {
       port: 9000,
       proxy: {
         '/api': {
-          target: apiUrl,
+          target: apiTarget,
           changeOrigin: true,
         },
       },
