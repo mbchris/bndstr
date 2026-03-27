@@ -56,6 +56,8 @@ COPY --from=build /app/packages/web/dist/spa/ /usr/share/nginx/html/
 COPY --from=api-deps /app/node_modules/ node_modules/
 COPY --from=api-deps /app/packages/ packages/
 COPY --from=build /app/packages/api/dist/ packages/api/dist/
+# Runtime migrations for drizzle migrator
+COPY --from=build /app/packages/api/src/db/migrations/ packages/api/dist/db/migrations/
 
 # For the unified container, nginx proxies to localhost instead of "api" hostname
 RUN sed -i 's|http://api:3001|http://127.0.0.1:3001|g' /etc/nginx/conf.d/bndstr.conf
@@ -67,5 +69,5 @@ ENV NODE_ENV=production
 
 EXPOSE 80
 
-# Start both API and nginx
-CMD node /app/packages/api/dist/index.js & nginx -g "daemon off;"
+# Run DB migrations, then start API and nginx
+CMD sh -c "node /app/packages/api/dist/db/migrate.js && node /app/packages/api/dist/index.js & nginx -g 'daemon off;'"
