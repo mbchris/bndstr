@@ -42,7 +42,10 @@ app.use(
   '*',
   cors({
     origin: (origin) => {
-      const allowed = (process.env.CORS_ORIGINS ?? 'http://localhost:9000').split(',')
+      const allowed = (process.env.CORS_ORIGINS ?? 'http://localhost:9000')
+        .split(/[;,]/)
+        .map((o) => o.trim())
+        .filter(Boolean)
       return allowed.includes(origin) ? origin : allowed[0]
     },
     credentials: true,

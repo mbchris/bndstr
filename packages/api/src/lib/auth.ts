@@ -22,7 +22,10 @@ export const auth = betterAuth({
   baseURL: process.env.API_URL ?? 'http://localhost:3001',
   basePath: '/auth',
 
-  trustedOrigins: (process.env.CORS_ORIGINS ?? 'http://localhost:9000').split(','),
+  trustedOrigins: (process.env.CORS_ORIGINS ?? 'http://localhost:9000')
+    .split(/[;,]/)
+    .map((o) => o.trim())
+    .filter(Boolean),
 
   socialProviders: {
     google: {

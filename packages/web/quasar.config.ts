@@ -1,8 +1,12 @@
 import { configure } from 'quasar/wrappers'
 
 export default configure(function (/* ctx */) {
-  const apiTarget = process.env.API_TARGET || `http://localhost:${process.env.API_PORT || '3001'}`
   const rawApiUrl = (process.env.API_URL || '').trim()
+  const apiTarget =
+    process.env.API_TARGET ||
+    (rawApiUrl.startsWith('http://') || rawApiUrl.startsWith('https://')
+      ? rawApiUrl
+      : `http://localhost:${process.env.API_PORT || process.env.PORT || '3001'}`)
   const apiUrl = rawApiUrl.replace(/\/+$/, '').replace(/\/api$/, '')
 
   return {
