@@ -129,3 +129,22 @@
 **Backlog:** [`docs/backlog/iter-7-starting-page.md`](./backlog/iter-7-starting-page.md)
 
 
+
+## Iteration 8 - Starting Page (Dashboard)
+
+**Goal:** Starting the app the first time brings the user to a "Dashboard"
+- The Dashboard page does not contain navigation links 
+- The Dashboard page has the "Manage Bands" Feature
+- The Dashboard page has the "Manage Subscriptions" Feature
+- "Manage Bands" in the Profile menu is replaced by "Dashboard".
+- Dashboard is the first element in the navigation bar
+- "Manage Band" has a "Select Band feature which brings the user to the main band app
+- The Dashboard page has a "Join Band" feature
+- "Manage Band" has a "Create Invitation code" feature
+- "Join Band" can use the "Invitation codes" created in "Manage Band"
+- Invitation Codes can be opened as a QR code
+- Invitation codes are only valid one time
+- used invitation codes are shown
+- Invitation codes can be invalidated
+
+**Backlog:** [docs/backlog/iter-8-dashboard.md](./backlog/iter-8-dashboard.md)

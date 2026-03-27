@@ -44,8 +44,8 @@
                 </q-item>
 
                 <q-separator />
-                <q-item clickable v-close-popup @click="goManageBands">
-                  <q-item-section>Manage Bands</q-item-section>
+                <q-item clickable v-close-popup @click="goDashboard">
+                  <q-item-section>Dashboard</q-item-section>
                 </q-item>
                 <q-item disable>
                   <q-item-section>Role: {{ activeBandRole }}</q-item-section>
@@ -59,7 +59,7 @@
         </div>
       </q-toolbar>
 
-      <div class="top-nav q-px-sm q-pb-sm">
+      <div v-if="showTopNav" class="top-nav q-px-sm q-pb-sm">
         <div class="row items-center no-wrap top-nav-scroll justify-center">
           <q-btn
             v-for="link in navLinks"
@@ -122,6 +122,7 @@ const isAdmin = computed(() => {
 
 const navLinks = computed(() => {
   const links = [
+    { icon: 'dashboard', label: t('nav.dashboard'), to: '/dashboard' },
     { icon: 'home', label: t('nav.home'), to: '/' },
     { icon: 'how_to_vote', label: t('nav.voting'), to: '/voting' },
     { icon: 'queue_music', label: t('nav.setlist'), to: '/setlist' },
@@ -138,6 +139,8 @@ const navLinks = computed(() => {
   return links
 })
 
+const showTopNav = computed(() => route.path !== '/dashboard')
+
 function isActiveRoute(path: string) {
   return route.path === path
 }
@@ -150,8 +153,8 @@ function selectBand(id: number) {
   activeBandId.value = id
 }
 
-function goManageBands() {
-  router.push('/bands/manage')
+function goDashboard() {
+  router.push('/dashboard')
 }
 
 async function handleLogout() {

@@ -1,6 +1,7 @@
 export default {
   // Navigation
   nav: {
+    dashboard: 'Dashboard',
     home: 'Startseite',
     calendar: 'Kalender',
     setlist: 'Setlist',

@@ -6,6 +6,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../layouts/MainLayout.vue'),
     meta: { requiresAuth: true },
     children: [
+      { path: 'dashboard', component: () => import('../pages/DashboardPage.vue') },
       { path: '', component: () => import('../pages/IndexPage.vue') },
       { path: 'voting', component: () => import('../pages/VotingPage.vue') },
       { path: 'setlist', component: () => import('../pages/SetlistPage.vue') },

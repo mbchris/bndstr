@@ -71,6 +71,11 @@ export default route(function (/* { store, ssrContext } */) {
       }
     }
 
+    if (to.meta.requiresAuth && to.path === '/' && localStorage.getItem('bndstr-dashboard-seen') !== '1') {
+      localStorage.setItem('bndstr-dashboard-seen', '1')
+      return { path: '/dashboard' }
+    }
+
     // Redirect already-authenticated users away from /login
     if (to.path === '/login' && auth.isAuthenticated) {
       return { path: '/' }

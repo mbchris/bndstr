@@ -43,6 +43,29 @@ export const bandMembers = pgTable(
   ],
 )
 
+export const bandInviteCodes = pgTable(
+  'band_invite_codes',
+  {
+    id: serial('id').primaryKey(),
+    bandId: integer('band_id')
+      .notNull()
+      .references(() => bands.id, { onDelete: 'cascade' }),
+    code: text('code').notNull(),
+    createdBy: text('created_by')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    usedBy: text('used_by').references(() => users.id, { onDelete: 'set null' }),
+    invalidatedBy: text('invalidated_by').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    usedAt: timestamp('used_at'),
+    invalidatedAt: timestamp('invalidated_at'),
+  },
+  (t) => [
+    uniqueIndex('band_invite_codes_code_idx').on(t.code),
+    index('band_invite_codes_band_idx').on(t.bandId, t.createdAt),
+  ],
+)
+
 // ─── Auth (managed by Better Auth, but declared for relations) ───────────────
 
 export const users = pgTable('user', {
