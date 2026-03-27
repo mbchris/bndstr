@@ -8,21 +8,22 @@
 - **Web Client:** Quasar + Vue 3 + TypeScript (`packages/web`)
 - **API Service:** Hono + TypeScript (`packages/api`)
 - **Shared Package:** `@bndstr/shared`
-- **Legacy/Parallel App Surface:** Nuxt 3 root app (`pages/`, `server/api/`)
 - **Repo:** `github.com/mbchris/bndstr`
 - **Board:** [Iterative Development](https://github.com/users/mbchris/projects/3)
 
-## Root Nuxt Routes
+## Web Routes (Quasar)
 
-| Route | File | Status |
-|---|---|---|
-| `/` | `pages/index.vue` | active |
-| `/admin` | `pages/admin.vue` | active |
-| `/calendar` | `pages/calendar.vue` | active |
-| `/login` | `pages/login.vue` | active |
-| `/setlist` | `pages/setlist.vue` | active |
-| `/stand` | `pages/stand.vue` | active |
-| `/voting` | `pages/voting.vue` | active |
+| Route | File |
+|---|---|
+| `/` | `packages/web/src/pages/IndexPage.vue` |
+| `/admin` | `packages/web/src/pages/AdminPage.vue` |
+| `/band/new` | `packages/web/src/pages/BandCreatePage.vue` |
+| `/billing` | `packages/web/src/pages/BillingPage.vue` |
+| `/calendar` | `packages/web/src/pages/CalendarPage.vue` |
+| `/login` | `packages/web/src/pages/LoginPage.vue` |
+| `/setlist` | `packages/web/src/pages/SetlistPage.vue` |
+| `/stand` | `packages/web/src/pages/StandPage.vue` |
+| `/voting` | `packages/web/src/pages/VotingPage.vue` |
 
 ## Workspace Scripts (root `package.json`)
 
@@ -47,12 +48,12 @@
 | `PORT` | API | API port (default `3001`) |
 | `API_URL` | API/Web | Public API base URL |
 | `DATABASE_URL` | API | PostgreSQL connection string |
-| `AUTH_SECRET` | API/Nuxt | Better Auth / auth secret |
+| `AUTH_SECRET` | API | Better Auth / auth secret |
 | `CORS_ORIGINS` | API | Comma-separated allowed origins |
-| `GOOGLE_CLIENT_ID` | API/Nuxt | Google OAuth client id |
-| `GOOGLE_CLIENT_SECRET` | API/Nuxt | Google OAuth client secret |
-| `GITHUB_CLIENT_ID` | API/Nuxt | GitHub OAuth client id |
-| `GITHUB_CLIENT_SECRET` | API/Nuxt | GitHub OAuth client secret |
+| `GOOGLE_CLIENT_ID` | API | Google OAuth client id |
+| `GOOGLE_CLIENT_SECRET` | API | Google OAuth client secret |
+| `GITHUB_CLIENT_ID` | API | GitHub OAuth client id |
+| `GITHUB_CLIENT_SECRET` | API | GitHub OAuth client secret |
 | `STRIPE_SECRET_KEY` | API | Stripe secret |
 | `STRIPE_WEBHOOK_SECRET` | API | Stripe webhook signing secret |
 | `STRIPE_PRICE_BAND` | API | Stripe price id (Band tier) |

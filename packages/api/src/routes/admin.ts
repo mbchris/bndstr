@@ -35,6 +35,9 @@ admin.get('/db/export', async (c) => {
     db.select().from(calendarEvents).where(eq(calendarEvents.bandId, bandId)),
   ])
 
+  c.header('Content-Type', 'application/json; charset=utf-8')
+  c.header('Content-Disposition', 'attachment; filename="bndstr-backup.json"')
+
   return c.json({
     exportedAt: new Date().toISOString(),
     band: bandData[0],
@@ -43,4 +46,15 @@ admin.get('/db/export', async (c) => {
     votes: votesData,
     calendarEvents: events,
   })
+})
+
+// GET /admin/calendar/export — export only calendar events as JSON
+admin.get('/calendar/export', async (c) => {
+  const bandId = c.get('bandId')
+  const events = await db.select().from(calendarEvents).where(eq(calendarEvents.bandId, bandId))
+
+  c.header('Content-Type', 'application/json; charset=utf-8')
+  c.header('Content-Disposition', 'attachment; filename="calendar_export.json"')
+
+  return c.json(events)
 })

@@ -1,14 +1,13 @@
 <template>
   <q-page padding>
     <div class="row q-col-gutter-lg" style="max-width: 1200px; margin: 0 auto">
-      <!-- Next Rehearsal Card -->
       <div class="col-12 col-md-6">
         <q-card v-if="nextRehearsal" flat bordered>
           <q-card-section>
             <div class="row items-center justify-between">
               <div class="text-h6 text-primary">
                 <q-icon name="music_note" class="q-mr-xs" />
-                Next Rehearsal
+                {{ t('home.nextRehearsal') }}
               </div>
               <q-btn v-if="isAdmin" flat round dense icon="edit" size="sm" @click="openRehearsalEdit" />
             </div>
@@ -22,24 +21,23 @@
             <q-banner v-if="nextRehearsal.unavailabilities?.length" rounded class="bg-red-1 text-red q-mb-md">
               <template #avatar><q-icon name="warning" color="red" /></template>
               {{ nextRehearsal.unavailabilities.map((u: any) => u.userName).join(', ') }}
-              {{ nextRehearsal.unavailabilities.length === 1 ? 'is unavailable' : 'are unavailable' }}
+              {{ nextRehearsal.unavailabilities.length === 1 ? t('home.unavailSingle') : t('home.unavailMulti') }}
             </q-banner>
 
             <div class="text-h4 text-weight-black">{{ formatTime(nextRehearsal.startTime) }}</div>
-            <markdown-component :content="nextRehearsal.description || 'General practice'" class="text-grey-6 q-mt-xs" />
+            <markdown-component :content="nextRehearsal.description || t('rehearsal.generalPractice')" class="text-grey-6 q-mt-xs" />
 
             <q-separator class="q-my-md" />
 
-            <!-- Bierwart -->
             <div v-if="bierwart" class="row items-center q-gutter-md cursor-pointer q-pa-sm rounded-borders" @click="openBierwartModal">
               <q-avatar size="48px" color="orange-2">
                 <img v-if="bierwart.image" :src="bierwart.image" />
                 <span v-else class="text-orange text-weight-bold">{{ bierwart.name?.charAt(0) }}</span>
               </q-avatar>
               <div class="col">
-                <div class="text-overline text-orange" style="font-size: 10px">ON DUTY</div>
+                <div class="text-overline text-orange" style="font-size: 10px">{{ t('home.onDuty') }}</div>
                 <div class="text-subtitle1 text-weight-bold">{{ bierwart.name }}</div>
-                <div class="text-caption text-grey">Has the drinks</div>
+                <div class="text-caption text-grey">{{ t('home.hasDrinks') }}</div>
               </div>
               <div class="row items-center q-gutter-xs">
                 <q-btn flat round dense icon="remove_circle" color="orange" size="sm" :loading="beerLoading" @click.stop="removeBeer" />
@@ -53,19 +51,18 @@
 
         <q-card v-else flat bordered class="text-center q-pa-xl">
           <q-icon name="calendar_today" size="48px" color="grey-4" />
-          <div class="text-grey q-mt-sm">No rehearsal scheduled</div>
-          <q-btn flat color="primary" label="Schedule one" to="/calendar" class="q-mt-md" />
+          <div class="text-grey q-mt-sm">{{ t('home.noRehearsal') }}</div>
+          <q-btn flat color="primary" :label="t('home.scheduleOne')" to="/calendar" class="q-mt-md" />
         </q-card>
       </div>
 
-      <!-- Upcoming Gigs Card -->
       <div class="col-12 col-md-6">
         <q-card flat bordered>
           <q-card-section>
             <div class="row items-center justify-between">
               <div class="text-h6 text-red">
                 <q-icon name="rocket_launch" class="q-mr-xs" />
-                Upcoming Gigs
+                {{ t('home.upcomingGigs') }}
               </div>
               <q-btn v-if="isAdmin" flat round dense icon="edit" size="sm" @click="openGigEdit" />
             </div>
@@ -73,18 +70,18 @@
 
           <q-card-section v-if="upcomingGigs?.length">
             <q-list separator>
-              <q-item v-for="gig in upcomingGigs" :key="gig.id">
+              <q-item v-for="gig in upcomingGigs" :key="gig.id" class="gig-entry rounded-borders q-my-xs">
                 <q-item-section side>
                   <div class="text-center" style="min-width: 50px">
-                    <div class="text-overline" style="font-size: 10px">{{ new Date(gig.startTime).toLocaleString(undefined, { month: 'short' }) }}</div>
+                    <div class="text-overline" style="font-size: 10px">{{ new Date(gig.startTime).toLocaleString(dateLocale, { month: 'short' }) }}</div>
                     <div class="text-h5 text-red">{{ new Date(gig.startTime).getDate() }}</div>
-                    <div class="text-overline text-grey" style="font-size: 8px">{{ new Date(gig.startTime).toLocaleDateString(undefined, { weekday: 'short' }) }}</div>
+                    <div class="text-overline text-grey" style="font-size: 8px">{{ new Date(gig.startTime).toLocaleDateString(dateLocale, { weekday: 'short' }) }}</div>
                   </div>
                 </q-item-section>
                 <q-item-section>
                   <q-item-label class="text-weight-bold">
                     {{ gig.title }}
-                    <q-badge v-if="gig.isTentative" color="grey" label="tentative" class="q-ml-xs" />
+                    <q-badge v-if="gig.isTentative" color="grey" :label="t('calendar.tentative')" class="q-ml-xs" />
                   </q-item-label>
                   <q-item-label caption><markdown-component :content="gig.description" /></q-item-label>
                 </q-item-section>
@@ -92,72 +89,69 @@
             </q-list>
           </q-card-section>
 
-          <q-card-section v-else class="text-center text-grey q-pa-lg">No upcoming gigs</q-card-section>
+          <q-card-section v-else class="text-center text-grey q-pa-lg">{{ t('home.noGigs') }}</q-card-section>
         </q-card>
       </div>
     </div>
 
-    <!-- Rehearsal Edit Dialog -->
     <q-dialog v-model="showRehearsalEdit">
       <q-card style="min-width: 400px">
         <q-card-section class="row items-center">
-          <div class="text-h6">Edit Rehearsal</div>
+          <div class="text-h6">{{ t('home.editRehearsal') }}</div>
           <q-space /><q-btn flat round dense icon="close" v-close-popup />
         </q-card-section>
         <q-card-section class="q-gutter-md">
-          <q-input v-model="editForm.title" label="Title" outlined dense />
+          <q-input v-model="editForm.title" :label="t('voting.songTitle')" outlined dense />
           <div class="row q-gutter-sm">
-            <q-input v-model="editForm.startTime" label="Start" type="datetime-local" outlined dense class="col" />
-            <q-input v-model="editForm.endTime" label="End" type="datetime-local" outlined dense class="col" />
+            <q-input v-model="editForm.startTime" :label="t('calendar.startTime')" type="datetime-local" outlined dense class="col" />
+            <q-input v-model="editForm.endTime" :label="t('calendar.endTime')" type="datetime-local" outlined dense class="col" />
           </div>
-          <q-input v-model="editForm.description" label="Description" type="textarea" outlined dense autogrow />
+          <q-input v-model="editForm.description" :label="t('calendar.description')" type="textarea" outlined dense autogrow />
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn flat label="Cancel" v-close-popup />
-          <q-btn color="primary" label="Save" :loading="saving" @click="saveRehearsal" />
+          <q-btn flat :label="t('common.cancel')" v-close-popup />
+          <q-btn color="primary" :label="t('common.save')" :loading="saving" @click="saveRehearsal" />
         </q-card-actions>
       </q-card>
     </q-dialog>
 
-    <!-- Gig Edit Dialog -->
     <q-dialog v-model="showGigEdit" full-width>
       <q-card style="max-width: 800px">
         <q-card-section class="row items-center">
-          <div class="text-h6">Manage Gigs</div>
+          <div class="text-h6">{{ t('home.manageGigs') }}</div>
           <q-space /><q-btn flat round dense icon="close" v-close-popup />
         </q-card-section>
         <q-card-section style="max-height: 60vh; overflow-y: auto">
           <div v-for="(gig, i) in editedGigs" :key="i" class="q-pa-md q-mb-md rounded-borders bg-grey-2">
             <div class="row items-center justify-between q-mb-sm">
-              <span class="text-overline text-grey">Gig #{{ i + 1 }}</span>
+              <span class="text-overline text-grey">{{ t('home.gigNumber') }} #{{ i + 1 }}</span>
               <q-btn flat round dense icon="delete" color="red" size="sm" @click="editedGigs.splice(i, 1)" />
             </div>
             <div class="q-gutter-sm">
-              <q-input v-model="gig.title" label="Title" outlined dense />
-              <q-input v-model="gig.description" label="Description" outlined dense />
+              <q-input v-model="gig.title" :label="t('voting.songTitle')" outlined dense />
+              <q-input v-model="gig.description" :label="t('calendar.description')" outlined dense />
               <div class="row q-gutter-sm">
-                <q-input v-model="gig.startTimeFormatted" label="Start" type="datetime-local" outlined dense class="col" />
-                <q-input v-model="gig.endTimeFormatted" label="End" type="datetime-local" outlined dense class="col" />
+                <q-input v-model="gig.startTimeFormatted" :label="t('calendar.startTime')" type="datetime-local" outlined dense class="col" />
+                <q-input v-model="gig.endTimeFormatted" :label="t('calendar.endTime')" type="datetime-local" outlined dense class="col" />
               </div>
             </div>
           </div>
-          <div v-if="!editedGigs.length" class="text-center text-grey q-pa-xl">No gigs scheduled</div>
+          <div v-if="!editedGigs.length" class="text-center text-grey q-pa-xl">{{ t('home.noGigsScheduled') }}</div>
         </q-card-section>
         <q-card-actions>
-          <q-btn flat icon="add_circle" label="Add Gig" color="grey" @click="addNewGig" />
+          <q-btn flat icon="add_circle" :label="t('home.addNewGig')" color="grey" @click="addNewGig" />
           <q-space />
-          <q-btn flat label="Cancel" v-close-popup />
-          <q-btn color="primary" icon="check" label="Save All" :loading="saving" @click="saveGigs" />
+          <q-btn flat :label="t('common.cancel')" v-close-popup />
+          <q-btn color="primary" icon="check" :label="t('home.saveAll')" :loading="saving" @click="saveGigs" />
         </q-card-actions>
       </q-card>
     </q-dialog>
 
-    <!-- Bierwart Selection Dialog -->
     <q-dialog v-model="showBierwartModal">
       <q-card style="min-width: 350px">
         <q-card-section class="row items-center">
           <q-icon name="science" color="orange" size="sm" class="q-mr-sm" />
-          <div class="text-h6">Bierwart Assignment</div>
+          <div class="text-h6">{{ t('home.bierwartMgmt') }}</div>
           <q-space /><q-btn flat round dense icon="close" v-close-popup />
         </q-card-section>
         <q-card-section>
@@ -189,10 +183,12 @@ import { useBandStore } from '../stores/band'
 import { apiJson } from '../boot/api'
 import MarkdownComponent from '../components/Markdown.vue'
 import BeerRain from '../components/BeerRain.vue'
+import { useI18n } from '../composables/useI18n'
 
 const $q = useQuasar()
 const authStore = useAuthStore()
 const bandStore = useBandStore()
+const { t, dateLocale } = useI18n()
 
 type RehearsalData = { nextRehearsal: any | null; upcomingGigs: any[] }
 
@@ -233,11 +229,11 @@ async function loadData() {
 onMounted(loadData)
 
 function formatDate(d: string | number) {
-  return new Date(d).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  return new Date(d).toLocaleDateString(dateLocale.value, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 }
 
 function formatTime(d: string | number) {
-  return new Date(d).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+  return new Date(d).toLocaleTimeString(dateLocale.value, { hour: '2-digit', minute: '2-digit' })
 }
 
 function formatForInput(d: string | number) {
@@ -246,7 +242,6 @@ function formatForInput(d: string | number) {
   return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
 }
 
-// Beer counter
 async function addBeer() {
   if (!bierwart.value || beerLoading.value) return
   beerLoading.value = true
@@ -254,7 +249,7 @@ async function addBeer() {
     await apiJson(`/users/${bierwart.value.id}`, { method: 'PATCH', body: JSON.stringify({ beerCount: (bierwart.value.beerCount || 0) + 1 }) })
     beerRainActive.value = true
     await bandStore.fetchMembers()
-    $q.notify({ message: 'Bier mitgebracht!', icon: 'science', color: 'orange' })
+    $q.notify({ message: t('admin.beerAdded'), icon: 'science', color: 'orange' })
   } catch { $q.notify({ message: 'Failed to update beer count', color: 'negative' }) }
   finally { beerLoading.value = false }
 }
@@ -265,11 +260,11 @@ async function removeBeer() {
   try {
     await apiJson(`/users/${bierwart.value.id}`, { method: 'PATCH', body: JSON.stringify({ beerCount: (bierwart.value.beerCount || 0) - 1 }) })
     await bandStore.fetchMembers()
-  } catch { /* ignore */ }
-  finally { beerLoading.value = false }
+  } catch {
+    // ignore
+  } finally { beerLoading.value = false }
 }
 
-// Rehearsal edit
 const showRehearsalEdit = ref(false)
 const editForm = ref({ title: '', startTime: '', endTime: '', description: '' })
 
@@ -290,7 +285,6 @@ async function saveRehearsal() {
   finally { saving.value = false }
 }
 
-// Gig edit
 const showGigEdit = ref(false)
 const editedGigs = ref<any[]>([])
 
@@ -323,7 +317,6 @@ async function saveGigs() {
   finally { saving.value = false }
 }
 
-// Bierwart selection
 const showBierwartModal = ref(false)
 function openBierwartModal() { showBierwartModal.value = true }
 
@@ -337,3 +330,19 @@ async function confirmBierwart(member: any) {
   finally { saving.value = false }
 }
 </script>
+
+<style scoped>
+.gig-entry {
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+}
+
+:global(body.body--dark) .gig-entry {
+  background: rgba(39, 39, 42, 0.92);
+  border-color: rgba(161, 161, 170, 0.34);
+}
+
+:global(body.body--dark) .gig-entry .q-item__label--caption {
+  color: rgba(244, 244, 245, 0.88);
+}
+</style>

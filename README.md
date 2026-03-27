@@ -1,7 +1,6 @@
 # bndstr
 
 Multi-tenant band management project with:
-- Nuxt 3 application in the repository root (`pages/`, `server/api/`)
 - Hono API service in `packages/api`
 - Quasar web/mobile client in `packages/web` (with Capacitor support)
 
@@ -52,7 +51,7 @@ pnpm db:studio
 
 Docker compose files are available for containerized workflows:
 - `docker-compose.dev.yml`: local PostgreSQL
-- `docker-compose.yml`: legacy Nuxt dev/prod profiles
+- `docker-compose.yml`: unified API + Quasar web deployment profiles
 
 ## Repository Structure
 
@@ -60,8 +59,6 @@ Docker compose files are available for containerized workflows:
 packages/api/      Hono API + Drizzle
 packages/web/      Quasar SPA + Capacitor targets
 packages/shared/   Shared types/utilities
-pages/             Nuxt pages (root app)
-server/api/        Nuxt/Nitro API routes (root app)
 docs/              Feature plan and backlog
 scripts/           Setup and automation scripts
 ```

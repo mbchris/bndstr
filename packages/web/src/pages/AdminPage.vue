@@ -145,12 +145,10 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useQuasar, type QTableColumn } from 'quasar'
-import { useAuthStore } from '../stores/auth'
 import { useBandStore } from '../stores/band'
 import { apiJson, api } from '../boot/api'
 
 const $q = useQuasar()
-const authStore = useAuthStore()
 const bandStore = useBandStore()
 
 const columns: QTableColumn[] = [
@@ -226,11 +224,34 @@ async function fetchStatus() {
 }
 
 // DB export/import
+async function downloadExport(path: string, fallbackFilename: string) {
+  try {
+    const res = await api(path, { method: 'GET' })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: res.statusText }))
+      throw new Error((err as { error?: string }).error || res.statusText)
+    }
+
+    const blob = await res.blob()
+    const contentDisposition = res.headers.get('content-disposition') || ''
+    const match = contentDisposition.match(/filename=\"?([^"]+)\"?/)
+    const filename = match?.[1] || fallbackFilename
+
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+  } catch (e: any) {
+    $q.notify({ message: e.message || 'Export failed', color: 'negative' })
+  }
+}
+
 function exportDb() {
-  const token = authStore.token
-  const bandId = authStore.activeBandId
-  const baseUrl = import.meta.env.VITE_API_URL || ''
-  window.open(`${baseUrl}/api/admin/db/export?token=${token}&bandId=${bandId}`, '_blank')
+  downloadExport('/admin/db/export', 'bndstr-backup.json')
 }
 
 async function handleImport(event: Event) {
@@ -256,10 +277,7 @@ async function handleImport(event: Event) {
 
 // Calendar export/import
 function exportCalendar() {
-  const token = authStore.token
-  const bandId = authStore.activeBandId
-  const baseUrl = import.meta.env.VITE_API_URL || ''
-  window.open(`${baseUrl}/api/admin/calendar/export?token=${token}&bandId=${bandId}`, '_blank')
+  downloadExport('/admin/calendar/export', 'calendar_export.json')
 }
 
 async function handleCalendarImport(event: Event) {

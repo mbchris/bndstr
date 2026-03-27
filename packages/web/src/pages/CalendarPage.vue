@@ -293,8 +293,8 @@ async function saveEvent() {
   try {
     const payload = {
       ...form.value,
-      startTime: new Date(form.value.startTime).getTime(),
-      endTime: new Date(form.value.endTime).getTime(),
+      startTime: new Date(form.value.startTime).toISOString(),
+      endTime: new Date(form.value.endTime).toISOString(),
     }
     if (editingEvent.value) {
       await calendarStore.updateEvent(editingEvent.value.id, payload as any)

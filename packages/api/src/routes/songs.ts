@@ -75,10 +75,6 @@ songs.post('/', zValidator('json', createSongSchema), async (c) => {
   const userId = c.get('user').id
   const body = c.req.valid('json')
 
-  if (body.type === 'song' && !body.spotifyUrl) {
-    return c.json({ error: 'spotifyUrl is required for songs' }, 400)
-  }
-
   const meta =
     body.type === 'song' && body.spotifyUrl
       ? await fetchSpotifyMetadata(body.spotifyUrl)

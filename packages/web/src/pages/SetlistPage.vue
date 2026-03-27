@@ -120,14 +120,21 @@
 
     <!-- Add Song to Master Setlist Dialog -->
     <q-dialog v-model="showAddSongModal">
-      <q-card style="min-width: 400px">
+      <q-card style="min-width: 450px">
         <q-card-section class="row items-center">
           <div class="text-h6">Add New Song to Master Setlist</div>
           <q-space /><q-btn flat round dense icon="close" v-close-popup />
         </q-card-section>
         <q-card-section class="q-gutter-md">
+          <div class="row q-gutter-sm">
+            <q-input v-model="addSongForm.spotifyUrl" label="Spotify URL" outlined dense class="col" @paste="onAddSpotifyPaste" />
+            <q-btn color="green" icon="search" :loading="addSongLookingUp" :disable="!addSongForm.spotifyUrl" @click="lookupSpotifyForAdd(true)">Lookup</q-btn>
+          </div>
+          <div v-if="addSongLookupError" class="text-red text-caption">{{ addSongLookupError }}</div>
           <q-input v-model="addSongForm.title" label="Title" outlined dense autofocus />
           <q-input v-model="addSongForm.artist" label="Artist" outlined dense />
+          <q-input v-model="addSongForm.youtubeUrl" label="YouTube URL" outlined dense />
+          <q-input v-model="addSongForm.notes" label="Notes" type="textarea" outlined dense autogrow />
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="Cancel" v-close-popup />
@@ -402,14 +409,17 @@ function showNote(title: string, content: string | null | undefined) {
 
 // Add song to master setlist
 const showAddSongModal = ref(false)
-const addSongForm = ref({ title: '', artist: '' })
+const addSongForm = ref({ title: '', artist: '', spotifyUrl: '', youtubeUrl: '', notes: '' })
+const addSongLookingUp = ref(false)
+const addSongLookupError = ref('')
 const isSaving = ref(false)
 
 function openAddSongModal() {
   if (selectedGigId.value) {
     showAddGigSongModal.value = true
   } else {
-    addSongForm.value = { title: '', artist: '' }
+    addSongForm.value = { title: '', artist: '', spotifyUrl: '', youtubeUrl: '', notes: '' }
+    addSongLookupError.value = ''
     showAddSongModal.value = true
   }
 }
@@ -417,11 +427,40 @@ function openAddSongModal() {
 async function submitAddSong() {
   isSaving.value = true
   try {
-    await songsStore.createSong({ title: addSongForm.value.title, artist: addSongForm.value.artist, position: filteredSongs.value.length, isSetlist: true } as any)
+    await songsStore.createSong({
+      title: addSongForm.value.title,
+      artist: addSongForm.value.artist,
+      spotifyUrl: addSongForm.value.spotifyUrl || undefined,
+      youtubeUrl: addSongForm.value.youtubeUrl || undefined,
+      notes: addSongForm.value.notes || undefined,
+      position: filteredSongs.value.length,
+      isSetlist: true,
+    } as any)
     showAddSongModal.value = false
     await refreshAll()
   } catch { $q.notify({ message: 'Failed to add song', color: 'negative' }) }
   finally { isSaving.value = false }
+}
+
+async function lookupSpotifyForAdd(force = true) {
+  const url = addSongForm.value.spotifyUrl
+  if (!url?.includes('spotify.com')) return
+  if (!force && addSongForm.value.title && addSongForm.value.artist) return
+  addSongLookingUp.value = true
+  addSongLookupError.value = ''
+  try {
+    const data = await apiJson<any>(`/songs/lookup?url=${encodeURIComponent(url)}`)
+    if (data?.title && (force || !addSongForm.value.title)) addSongForm.value.title = data.title
+    if (data?.artist && (force || !addSongForm.value.artist)) addSongForm.value.artist = data.artist
+  } catch {
+    addSongLookupError.value = 'Lookup failed'
+  } finally {
+    addSongLookingUp.value = false
+  }
+}
+
+function onAddSpotifyPaste() {
+  setTimeout(() => lookupSpotifyForAdd(false), 100)
 }
 
 // Add master songs to gig setlist

@@ -3,8 +3,8 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Enable Corepack (pnpm version comes from packageManager in package.json)
+RUN corepack enable
 
 # Copy workspace root files
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* ./

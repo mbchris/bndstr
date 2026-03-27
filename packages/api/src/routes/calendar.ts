@@ -35,11 +35,15 @@ calendar.get('/', async (c) => {
   return c.json(events)
 })
 
+const dateInputSchema = z.union([z.string().datetime(), z.number()]).transform((value) =>
+  typeof value === 'number' ? new Date(value).toISOString() : value,
+)
+
 const eventBodySchema = z.object({
   title: z.string().min(1),
   description: z.string().optional(),
-  startTime: z.string().datetime(),
-  endTime: z.string().datetime(),
+  startTime: dateInputSchema,
+  endTime: dateInputSchema,
   type: z.enum(['rehearsal', 'gig', 'event', 'unavailability']).default('rehearsal'),
   userId: z.string().optional().nullable(),
   bierwartOverrideId: z.string().optional().nullable(),
@@ -69,11 +73,15 @@ calendar.post('/', zValidator('json', eventBodySchema), async (c) => {
 // PUT /calendar/:id
 calendar.put(
   '/:id',
-  zValidator('json', eventBodySchema.partial().extend({ id: z.number() })),
+  zValidator('json', eventBodySchema.partial().extend({ id: z.number().optional() })),
   async (c) => {
     const bandId = c.get('bandId')
     const id = Number(c.req.param('id'))
     const body = c.req.valid('json')
+
+    if (!Number.isFinite(id) || id <= 0) {
+      return c.json({ error: 'Invalid calendar id' }, 400)
+    }
 
     const updates: Record<string, unknown> = {}
     if (body.title) updates.title = body.title

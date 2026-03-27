@@ -1,17 +1,229 @@
-// bndstr design tokens — mirrors current CSS custom properties
+// Inter — modern geometric sans-serif
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+// ─── Design tokens ───────────────────────────────────────────────
 :root {
-  --brand: #7c3aed;
-  --brand-light: #a78bfa;
-  --surface: #1a1a2e;
-  --surface-raised: #16213e;
+  --brand: #6366f1;
+  --brand-light: #818cf8;
+  --surface: #09090b;            // Zinc-950 — deep charcoal, not pure black
+  --surface-raised: #18181b;     // Zinc-900
+  --surface-overlay: #27272a;    // Zinc-800 — dialogs, dropdowns
   --border: rgba(255, 255, 255, 0.08);
-  --text: #e2e8f0;
-  --text-muted: #94a3b8;
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --text: #f4f4f5;               // Zinc-100
+  --text-muted: #a1a1aa;         // Zinc-400
   --radius: 12px;
   --radius-sm: 8px;
+  --radius-xs: 6px;
+  --transition: 150ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-// Override Quasar primary color
-.q-btn.q-btn--primary {
-  background: var(--brand);
+// ─── Global typography ───────────────────────────────────────────
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.011em;
+  color: var(--text);
+}
+
+// Premium heading feel
+.text-h1, .text-h2, .text-h3, .text-h4, .text-h5, .text-h6 {
+  font-family: 'Inter', sans-serif;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+
+.text-h4 { font-weight: 700; }
+.text-h5 { font-weight: 700; }
+
+// ─── Dark background overrides ───────────────────────────────────
+// Quasar dark-mode surfaces → Zinc palette
+body.body--dark {
+  background: var(--surface);
+
+  .q-page {
+    background: var(--surface);
+  }
+
+  // Header & drawer — seamless with background
+  .q-header,
+  .q-drawer {
+    background: var(--surface) !important;
+    border-color: var(--border) !important;
+  }
+
+  // Cards — subtle border, no shadow
+  .q-card {
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: none;
+
+    &.q-dialog__inner .q-card,
+    &--dialog {
+      background: var(--surface-overlay);
+    }
+  }
+
+  // Dialogs
+  .q-dialog .q-card {
+    background: var(--surface-overlay);
+    border: 1px solid var(--border-strong);
+  }
+
+  // Inputs — outlined style with subtle borders
+  .q-field--outlined .q-field__control {
+    border-radius: var(--radius-sm);
+
+    &::before {
+      border-color: var(--border-strong);
+      transition: border-color var(--transition);
+    }
+
+    &:hover::before {
+      border-color: rgba(255, 255, 255, 0.24);
+    }
+  }
+
+  .q-field--focused .q-field__control::before {
+    border-color: var(--brand) !important;
+  }
+
+  // Separators
+  .q-separator {
+    background: var(--border) !important;
+  }
+
+  // List items — subtle hover
+  .q-item {
+    border-radius: var(--radius-sm);
+    transition: background var(--transition);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+  }
+
+  // Toolbar
+  .q-toolbar {
+    min-height: 56px;
+  }
+
+  // Banners
+  .q-banner {
+    border-radius: var(--radius-sm);
+  }
+
+  // Select dropdown
+  .q-menu {
+    background: var(--surface-overlay);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  }
+
+  // Table overrides
+  .q-table {
+    background: var(--surface-raised);
+    border-radius: var(--radius);
+
+    thead th {
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+  }
+
+  // Tabs
+  .q-tab {
+    border-radius: var(--radius-sm);
+    transition: background var(--transition);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+  }
+}
+
+// ─── Buttons — flat, modern feel ─────────────────────────────────
+.q-btn {
+  font-weight: 500;
+  text-transform: none;           // Kill the ALL CAPS
+  letter-spacing: 0;
+  transition: all var(--transition);
+
+  &--unelevated {
+    box-shadow: none !important;
+  }
+
+  // Ghost / outline buttons
+  &--outline {
+    border-color: var(--border-strong);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+  }
+
+  // Flat buttons — subtle hover
+  &--flat:hover {
+    background: rgba(255, 255, 255, 0.06);
+  }
+}
+
+// ─── Scrollbar — minimal ─────────────────────────────────────────
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+}
+
+// ─── Auth card (login page) ─────────────────────────────────────
+.auth-card {
+  background: var(--surface-raised);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+}
+
+// ─── Nav items — active state pill ──────────────────────────────
+.q-drawer .q-item {
+  margin: 2px 8px;
+  border-radius: var(--radius-sm);
+
+  &.q-router-link--active {
+    background: rgba(99, 102, 241, 0.12);
+    color: var(--brand-light);
+  }
+}
+
+// ─── Badge refinements ──────────────────────────────────────────
+.q-badge {
+  font-weight: 600;
+  border-radius: var(--radius-xs);
+}
+
+// ─── Transitions for page content ────────────────────────────────
+.q-page {
+  animation: fadeIn 200ms ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }

@@ -37,7 +37,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: sh -c "corepack enable && pnpm install --filter @bndstr/api --filter @bndstr/shared && cd packages/api && pnpm run dev"
+    command: sh -c "export COREPACK_ENABLE_DOWNLOAD_PROMPT=0 CI=1; corepack enable && pnpm install --filter @bndstr/api --filter @bndstr/shared && cd packages/api && pnpm run dev"
     profiles:
       - full
 
@@ -55,7 +55,7 @@ services:
       - API_URL=http://api:3001
     depends_on:
       - api
-    command: sh -c "corepack enable && pnpm install --filter @bndstr/web --filter @bndstr/shared && cd packages/web && pnpm run dev"
+    command: sh -c "export COREPACK_ENABLE_DOWNLOAD_PROMPT=0 CI=1; corepack enable && pnpm install --filter @bndstr/web --filter @bndstr/shared && cd packages/web && pnpm run dev"
     profiles:
       - full
 

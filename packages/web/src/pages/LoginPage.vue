@@ -14,9 +14,10 @@
 
     <q-btn
       color="dark"
+      text-color="white"
       icon="img:https://github.com/favicon.ico"
       label="Continue with GitHub"
-      class="full-width"
+      class="full-width q-btn-github"
       outline
       size="md"
       :loading="loadingGithub"
@@ -59,3 +60,9 @@ async function loginGithub() {
   }
 }
 </script>
+
+<style scoped>
+.q-btn-github {
+  border-color: rgba(255, 255, 255, 0.35);
+}
+</style>

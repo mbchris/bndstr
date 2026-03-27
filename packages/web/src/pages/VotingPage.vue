@@ -53,26 +53,51 @@
                   <a v-if="song.spotifyUrl" :href="song.spotifyUrl" target="_blank" class="text-green text-caption text-weight-bold" style="text-decoration:none">Spotify</a>
                   <a v-if="song.youtubeUrl" :href="song.youtubeUrl" target="_blank" class="text-red text-caption text-weight-bold" style="text-decoration:none">YouTube</a>
                 </div>
+                <div class="row q-gutter-xs q-mt-sm">
+                  <div v-for="member in visibleMembers" :key="member.id" class="row items-center no-wrap bg-grey-2 rounded-borders q-px-xs q-py-xxs">
+                    <q-avatar
+                      size="22px"
+                      :class="getMemberVoteRingClass(song, member.id)"
+                      :color="member.image ? undefined : getMemberFallbackColor(song, member.id)"
+                      :text-color="member.image ? undefined : 'grey-1'"
+                    >
+                      <img v-if="member.image" :src="member.image" />
+                      <span v-else style="font-size: 10px">{{ member.name?.charAt(0) }}</span>
+                    </q-avatar>
+                    <span class="text-caption text-weight-bold q-ml-xs">{{ getMemberVoteLabel(song, member.id) }}</span>
+                    <q-tooltip>{{ member.name }}</q-tooltip>
+                  </div>
+                </div>
               </q-item-section>
 
               <!-- Vote buttons -->
               <q-item-section side>
-                <div class="row q-gutter-xs">
-                  <q-btn v-for="sc in [0, 1, 2, 3]" :key="sc" :label="voteLabels[sc]" :color="song.hasVoted === sc ? voteColors[sc] : 'grey-4'" :text-color="song.hasVoted === sc ? 'white' : 'grey-8'" dense size="sm" no-caps @click="toggleVote(song, sc)" />
-                </div>
-              </q-item-section>
-
-              <!-- Stats -->
-              <q-item-section side class="gt-xs">
-                <div class="text-center">
-                  <div class="text-h6 text-primary text-weight-black">{{ Number(song.voteAverage || 0).toFixed(1) }}</div>
-                  <div class="text-overline text-grey" style="font-size: 9px">{{ song.voteCount }} votes</div>
+                <div class="column items-end">
+                  <div class="row q-gutter-xs">
+                    <q-btn
+                      v-for="sc in [0, 1, 2, 3]"
+                      :key="sc"
+                      :label="voteLabels[sc]"
+                      :color="song.hasVoted === sc ? voteColors[sc] : 'grey-7'"
+                      :text-color="song.hasVoted === sc ? 'white' : 'grey-2'"
+                      dense
+                      size="sm"
+                      no-caps
+                      @click="toggleVote(song, sc)"
+                    />
+                  </div>
+                  <div class="text-caption text-grey-8 q-mt-xs text-right">
+                    Avg {{ Number(song.voteAverage || 0).toFixed(1) }} • {{ song.voteCount }} votes
+                  </div>
                 </div>
               </q-item-section>
 
               <!-- Actions -->
               <q-item-section side>
                 <div class="column q-gutter-xs">
+                  <q-btn v-if="!song.isSetlist" flat round dense icon="arrow_forward" color="grey" size="sm" @click="openTransferModal(song)">
+                    <q-tooltip>Transfer</q-tooltip>
+                  </q-btn>
                   <q-btn v-if="canEdit(song)" flat round dense icon="edit" size="sm" @click="openEditModal(song)" />
                   <q-btn v-if="canDelete(song)" flat round dense icon="delete" color="red" size="sm" @click="deleteSong(song)" />
                 </div>
@@ -81,21 +106,6 @@
           </q-list>
 
           <q-banner v-else rounded class="bg-grey-2">No songs yet. Add one to get started!</q-banner>
-
-          <!-- Band member vote indicators row below each song -->
-          <template v-if="filteredSongs.length && visibleMembers.length">
-            <q-separator class="q-my-sm" />
-            <div class="text-caption text-grey q-mb-sm">Band votes per song:</div>
-            <div v-for="song in filteredSongs" :key="'votes-' + song.id" class="row items-center q-gutter-sm q-mb-xs">
-              <span class="text-caption text-weight-bold" style="min-width: 120px">{{ song.title }}</span>
-              <q-avatar v-for="member in visibleMembers" :key="member.id" size="24px" :class="getMemberVoteRingClass(song, member.id)">
-                <img v-if="member.image" :src="member.image" />
-                <span v-else style="font-size: 10px">{{ member.name?.charAt(0) }}</span>
-                <q-tooltip>{{ member.name }}: {{ getMemberVoteLabel(song, member.id) }}</q-tooltip>
-              </q-avatar>
-              <q-btn v-if="!song.isSetlist" flat dense size="sm" label="Transfer" icon="arrow_forward" color="grey" @click="openTransferModal(song)" />
-            </div>
-          </template>
         </q-card-section>
       </q-card>
     </div>
@@ -192,8 +202,14 @@ function canDelete(song: Song) { return isAdmin.value || authStore.user?.id === 
 
 function getMemberVoteRingClass(song: Song, userId: string) {
   const vote = song.allVotes?.find((v) => v.userId === userId)
-  if (!vote) return 'bg-grey-3'
-  return ['bg-red-2', 'bg-orange-2', 'bg-primary-2', 'bg-green-2'][vote.score] || 'bg-grey-3'
+  if (!vote) return 'member-vote-empty'
+  return ['member-vote-veto', 'member-vote-ok', 'member-vote-good', 'member-vote-great'][vote.score] || 'member-vote-empty'
+}
+
+function getMemberFallbackColor(song: Song, userId: string) {
+  const vote = song.allVotes?.find((v) => v.userId === userId)
+  if (!vote) return 'grey-6'
+  return ['red-8', 'orange-8', 'blue-8', 'green-8'][vote.score] || 'grey-6'
 }
 
 function getMemberVoteLabel(song: Song, userId: string) {
@@ -318,3 +334,25 @@ onMounted(() => {
   bandStore.fetchMembers()
 })
 </script>
+
+<style scoped>
+.member-vote-empty {
+  border: 1px solid #9ca3af;
+}
+
+.member-vote-veto {
+  border: 2px solid #ef4444;
+}
+
+.member-vote-ok {
+  border: 2px solid #f97316;
+}
+
+.member-vote-good {
+  border: 2px solid #3b82f6;
+}
+
+.member-vote-great {
+  border: 2px solid #22c55e;
+}
+</style>

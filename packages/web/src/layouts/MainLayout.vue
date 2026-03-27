@@ -1,56 +1,54 @@
 <template>
   <q-layout view="lHh Lpr lFf">
-    <q-header elevated class="bg-grey-10">
-      <q-toolbar>
-        <q-btn flat dense round icon="menu" aria-label="Menu" @click="toggleLeftDrawer" />
-
+    <q-header bordered class="bg-transparent">
+      <q-toolbar class="q-px-sm q-px-md-md">
         <q-toolbar-title>
-          <span class="text-weight-bold">bndstr</span>
+          <span class="text-weight-bold" style="letter-spacing: -0.03em">bndstr</span>
         </q-toolbar-title>
 
-        <!-- Band switcher -->
-        <q-select
-          v-if="authStore.bands.length > 0"
-          v-model="activeBandId"
-          :options="bandOptions"
-          dense
-          outlined
-          dark
-          emit-value
-          map-options
-          style="min-width: 160px"
-          class="q-mr-sm"
-        />
+        <div class="row items-center q-gutter-xs q-gutter-sm-md no-wrap">
+          <q-btn
+            flat
+            dense
+            class="text-weight-bold"
+            :label="locale === 'en' ? 'DE' : 'EN'"
+            @click="toggleLocale"
+          />
 
-        <q-btn flat round dense icon="add" @click="$router.push('/band/new')" title="New band" />
+          <q-select
+            v-if="authStore.bands.length > 0"
+            v-model="activeBandId"
+            :options="bandOptions"
+            dense
+            outlined
+            dark
+            emit-value
+            map-options
+            style="min-width: 160px"
+            class="gt-xs"
+          />
 
-        <q-btn flat round dense icon="logout" @click="handleLogout" title="Sign out" />
+          <q-btn flat round dense icon="add" @click="$router.push('/band/new')" :title="t('common.add')" />
+          <q-btn flat round dense icon="logout" @click="handleLogout" :title="t('nav.signOut')" />
+        </div>
       </q-toolbar>
+
+      <div class="top-nav q-px-sm q-pb-sm">
+        <div class="row items-center no-wrap top-nav-scroll">
+          <q-btn
+            v-for="link in navLinks"
+            :key="link.to"
+            flat
+            dense
+            no-caps
+            :label="link.label"
+            :to="link.to"
+            class="top-nav-btn q-mr-xs"
+            :class="{ 'top-nav-btn--active': isActiveRoute(link.to) }"
+          />
+        </div>
+      </div>
     </q-header>
-
-    <q-drawer v-model="leftDrawerOpen" show-if-above bordered class="bg-grey-10">
-      <q-list>
-        <q-item-label header class="text-grey-6 text-uppercase text-caption q-pt-lg">
-          Navigation
-        </q-item-label>
-
-        <nav-item icon="home" label="Home" to="/" exact />
-        <nav-item icon="how_to_vote" label="Voting" to="/voting" />
-        <nav-item icon="queue_music" label="Setlist" to="/setlist" />
-        <nav-item icon="calendar_today" label="Calendar" to="/calendar" />
-        <nav-item icon="music_note" label="Stand" to="/stand" />
-
-        <q-separator class="q-my-sm" dark />
-
-        <nav-item
-          v-if="isAdmin"
-          icon="admin_panel_settings"
-          label="Admin"
-          to="/admin"
-        />
-        <nav-item icon="payment" label="Billing" to="/billing" />
-      </q-list>
-    </q-drawer>
 
     <q-page-container>
       <router-view />
@@ -59,20 +57,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useBandStore } from '../stores/band'
 import { apiJson } from '../boot/api'
-import NavItem from '../components/NavItem.vue'
+import { useI18n } from '../composables/useI18n'
 
 const authStore = useAuthStore()
 const bandStore = useBandStore()
-
-const leftDrawerOpen = ref(false)
-
-function toggleLeftDrawer() {
-  leftDrawerOpen.value = !leftDrawerOpen.value
-}
+const route = useRoute()
+const { t, locale, toggleLocale } = useI18n()
 
 const bandOptions = computed(() =>
   authStore.bands.map((b) => ({ label: b.name, value: b.id })),
@@ -82,22 +77,42 @@ const activeBandId = computed({
   get: () => authStore.activeBandId,
   set: (id) => {
     authStore.setActiveBand(id)
-    // Refresh band members when switching
     bandStore.fetchMembers()
   },
 })
 
 const isAdmin = computed(() => {
   const band = authStore.activeBand
-  return band && ['owner', 'admin'].includes(band.role)
+  return !!(band && ['owner', 'admin'].includes(band.role))
 })
+
+const navLinks = computed(() => {
+  const links = [
+    { icon: 'home', label: t('nav.home'), to: '/' },
+    { icon: 'how_to_vote', label: t('nav.voting'), to: '/voting' },
+    { icon: 'queue_music', label: t('nav.setlist'), to: '/setlist' },
+    { icon: 'calendar_today', label: t('nav.calendar'), to: '/calendar' },
+    { icon: 'music_note', label: t('nav.bendAStand'), to: '/stand' },
+  ]
+
+  if (isAdmin.value) {
+    links.push({ icon: 'admin_panel_settings', label: t('nav.admin'), to: '/admin' })
+  }
+
+  links.push({ icon: 'payment', label: 'Billing', to: '/billing' })
+
+  return links
+})
+
+function isActiveRoute(path: string) {
+  return route.path === path
+}
 
 async function loadBands() {
   try {
     const bands = await apiJson<typeof authStore.bands>('/bands')
     authStore.setBands(bands)
   } catch {
-    // Prevent white-screen on boot if bands endpoint is unavailable.
     authStore.clearSession()
     window.location.href = '/login'
   }
@@ -110,6 +125,33 @@ async function handleLogout() {
   window.location.href = '/login'
 }
 
-// Load bands on mount
 loadBands()
 </script>
+
+<style scoped>
+.top-nav {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.top-nav-scroll {
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+.top-nav-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.top-nav-btn {
+  border-radius: 999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.top-nav-btn--active {
+  background: rgba(99, 102, 241, 0.16);
+  border-color: rgba(129, 140, 248, 0.35);
+  color: #a5b4fc;
+}
+</style>

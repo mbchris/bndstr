@@ -12,7 +12,7 @@ export default configure(function (/* ctx */) {
 
     css: ['app.scss'],
 
-    extras: ['roboto-font', 'material-icons'],
+    extras: ['material-icons'],
 
     build: {
       target: {

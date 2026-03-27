@@ -1,99 +1,106 @@
 #!/usr/bin/env bash
 
-# The 'do' script for bndstr
-# Used for starting the application locally or deploying it.
-
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-command="$1"
-
-# Default to local if no environment is provided
+command="${1:-}"
 env_profile="${2:-local}"
 
-# Validate environment
-if [[ "$env_profile" != "local" && "$env_profile" != "staging" && "$env_profile" != "production" ]]; then
-  echo "Error: Invalid environment '$env_profile'. Valid options: local, staging, production"
+if [[ -z "$command" ]]; then
+  echo "Usage: ./do {start|dev|run|logs|stop|seed|install|build} [local]"
   exit 1
 fi
 
-env_file=".env.$env_profile"
-
-# Fallback to standard .env if the specific profile file doesn't exist
-if [ ! -f "$env_file" ]; then
-  if [ -f ".env" ]; then
-    echo "Warning: $env_file not found. Falling back to .env"
-    env_file=".env"
-  else
-    echo "Error: Neither $env_file nor .env found! Please copy .env.template and configure it."
-    exit 1
-  fi
+if [[ "$env_profile" != "local" ]]; then
+  echo "Error: Only local mode is supported. Use: ./do <command> local"
+  exit 1
 fi
 
-# Ensure the proxy network exists (required for Traefik profiles used in build/deploy/prod)
-if [[ "$command" == "build" || "$command" == "deploy" || "$command" == "prod" || "$env_profile" == "staging" || "$env_profile" == "production" ]]; then
-  proxy_net="${DOCKER_NETWORK:-coolify}"
-  docker network inspect "$proxy_net" >/dev/null 2>&1 || {
-    echo "Creating '$proxy_net' network for Traefik compatibility..."
-    docker network create "$proxy_net"
-  }
+if [[ -f ".env.local" ]]; then
+  env_file=".env.local"
+elif [[ -f ".env" ]]; then
+  echo "Warning: .env.local not found. Falling back to .env"
+  env_file=".env"
+else
+  echo "Error: Neither .env.local nor .env found."
+  exit 1
 fi
 
 echo "Using environment configuration: $env_file"
 export ENV_FILE="$env_file"
 
+DB_COMPOSE=(docker compose -f docker-compose.dev.yml)
+APP_COMPOSE=(docker compose --profile dev)
+PROD_COMPOSE=(docker compose --profile prod)
+COREPACK_NONINTERACTIVE='export COREPACK_ENABLE_DOWNLOAD_PROMPT=0 CI=1;'
+
+ensure_db() {
+  echo "Ensuring local PostgreSQL is running (docker-compose.dev.yml)..."
+  "${DB_COMPOSE[@]}" up -d postgres
+}
+
+ensure_migrations_file() {
+  if ! ls packages/api/src/db/migrations/*.sql >/dev/null 2>&1; then
+    echo "No migration files found. Generating initial migration..."
+    "${APP_COMPOSE[@]}" run --rm dev sh -c "$COREPACK_NONINTERACTIVE corepack enable && pnpm install && pnpm --filter @bndstr/api run db:generate"
+  fi
+}
+
+run_migrations_if_needed() {
+  local has_tracking_table
+  local app_table_count
+
+  has_tracking_table=$("${DB_COMPOSE[@]}" exec -T postgres psql -U bndstr -d bndstr -tAc \
+    "select case when to_regclass('public.__drizzle_migrations') is null then 0 else 1 end;")
+  app_table_count=$("${DB_COMPOSE[@]}" exec -T postgres psql -U bndstr -d bndstr -tAc \
+    "select count(*) from information_schema.tables where table_schema='public' and table_type='BASE TABLE' and table_name <> '__drizzle_migrations';")
+
+  if [[ "$has_tracking_table" == "1" || "$app_table_count" == "0" ]]; then
+    echo "Running local database migrations..."
+    "${APP_COMPOSE[@]}" run --rm dev sh -c "$COREPACK_NONINTERACTIVE corepack enable && pnpm install && pnpm --filter @bndstr/api run db:migrate"
+    return
+  fi
+
+  echo "Skipping migrations: schema exists but Drizzle tracking table is missing."
+  echo "Reason: running initial migration here would fail on already existing tables."
+}
+
 case "$command" in
   start|dev|run)
-    echo "Starting development server ($env_profile)..."
-    if [ "$env_profile" == "local" ]; then
-      echo "Ensuring local PostgreSQL is running (docker-compose.dev.yml)..."
-      docker compose -f docker-compose.dev.yml up -d postgres
-      if ! ls packages/api/src/db/migrations/*.sql >/dev/null 2>&1; then
-        echo "No migration files found. Generating initial migration..."
-        docker compose --profile dev run --rm dev sh -c "corepack enable && corepack prepare pnpm@latest --activate && pnpm install && pnpm --filter @bndstr/api run db:generate"
-      fi
-      echo "Running local database migrations..."
-      docker compose --profile dev run --rm dev sh -c "corepack enable && corepack prepare pnpm@latest --activate && pnpm install && pnpm --filter @bndstr/api run db:migrate"
-    fi
-    docker compose --profile dev up
-    ;;
-  build)
-    echo "Building production-grade image ($env_profile)..."
-    if [ "$env_profile" == "staging" ]; then
-      docker compose --profile staging build
-    else
-      docker compose --profile prod build
-    fi
-    ;;
-  deploy|prod)
-    echo "Starting production server ($env_profile)..."
-    if [ "$env_profile" == "staging" ]; then
-      docker compose --profile staging up -d
-    else
-      docker compose --profile prod up -d
-    fi
+    echo "Starting development server (local)..."
+    ensure_db
+    ensure_migrations_file
+    run_migrations_if_needed
+    "${APP_COMPOSE[@]}" up
     ;;
   logs)
     echo "Viewing logs..."
-    docker compose logs -f
+    "${APP_COMPOSE[@]}" logs -f
     ;;
   stop)
     echo "Stopping containers..."
-    docker compose down
+    "${APP_COMPOSE[@]}" down
+    "${DB_COMPOSE[@]}" down
     ;;
-  test)
-    echo "Running tests..."
-    npm run test
+  install)
+    echo "Installing dependencies..."
+    "${APP_COMPOSE[@]}" run --rm dev sh -c "$COREPACK_NONINTERACTIVE corepack enable && pnpm install"
     ;;
   seed)
-    echo "Seeding database ($env_profile)..."
-    # Run the seed script inside the dev container to ensure binary compatibility (Alpine)
-    docker compose --profile dev run --rm dev npx -y tsx scripts/seed.ts
+    echo "Seeding local database..."
+    ensure_db
+    ensure_migrations_file
+    run_migrations_if_needed
+    "${APP_COMPOSE[@]}" run --rm dev sh -c "$COREPACK_NONINTERACTIVE corepack enable && pnpm install && pnpm --filter @bndstr/api run db:seed"
+    ;;
+  build)
+    echo "Building production Docker image..."
+    "${PROD_COMPOSE[@]}" build prod
     ;;
   *)
-    echo "Usage: ./do {start|dev|run|build|deploy|logs|stop|test|seed} [local|staging|production]"
+    echo "Usage: ./do {start|dev|run|logs|stop|seed|install|build} [local]"
     exit 1
     ;;
 esac

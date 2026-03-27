@@ -8,9 +8,8 @@
 |---|---|
 | Web App | Quasar + Vue 3 + TypeScript (`packages/web`) |
 | API | Hono + TypeScript (`packages/api`) |
-| Legacy App | Nuxt 3 root app (still present in repo root) |
 | Language | TypeScript (strict) |
-| Styles | SCSS (Quasar app) + CSS custom properties (Nuxt root app) |
+| Styles | SCSS (Quasar app) |
 | Deployment | Docker + docker-compose |
 | Package manager | pnpm workspaces |
 
@@ -29,9 +28,6 @@
 │   ├── api/                 # Hono API server
 │   ├── web/                 # Quasar web/mobile app
 │   └── shared/              # Shared types/utilities
-│
-├── pages/                   # Nuxt root app pages (legacy/current)
-├── server/api/              # Nuxt Nitro API routes (legacy/current)
 │
 ├── docs/
 │   ├── feature_plan.md      # Iteration roadmap
@@ -55,10 +51,9 @@
 ## Coding Standards
 
 1. **TypeScript strictness** — keep strict typing; avoid `any` unless unavoidable
-2. **Vue style** — use Composition API and `<script setup lang="ts">` in Nuxt Vue files
+2. **Vue style** — use Composition API and `<script setup lang="ts">` in Vue files
 3. **Quasar app conventions** — follow existing structure in `packages/web/src/*` (boot files, stores, pages)
 4. **API conventions** — keep route handlers under `packages/api/src/routes/*`; preserve middleware chain
-5. **Nuxt root app** — if editing root app files (`pages`, `server/api`), follow Nuxt/Nitro naming conventions
 
 ## Iteration Workflow
 
