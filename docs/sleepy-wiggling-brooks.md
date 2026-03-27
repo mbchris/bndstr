@@ -27,17 +27,17 @@ Summary of current status:
 
 ✅ Add Docker Compose for local dev (PostgreSQL) + Coolify production deployment
 
-Port IndexPage (Dashboard) from Nuxt
+✅ Port IndexPage (Dashboard) from Nuxt
 
-Port VotingPage from Nuxt
+✅ Port VotingPage from Nuxt
 
-Port SetlistPage from Nuxt
+✅ Port SetlistPage from Nuxt
 
-Port CalendarPage from Nuxt
+✅ Port CalendarPage from Nuxt
 
-Port AdminPage from Nuxt
+✅ Port AdminPage from Nuxt
 
-Port StandPage from Nuxt
+✅ Port StandPage from Nuxt
 
 ✅ Implement Stripe billing API endpoints (checkout, portal, webhook) + BillingPage wiring (Step 7)
 
