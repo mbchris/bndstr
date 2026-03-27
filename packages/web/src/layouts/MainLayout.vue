@@ -29,6 +29,9 @@
           <q-btn flat round dense icon="account_circle">
             <q-menu anchor="bottom right" self="top right">
               <q-list style="min-width: 260px">
+                <q-item clickable v-close-popup @click="goDashboard">
+                  <q-item-section>Dashboard</q-item-section>
+                </q-item>
                 <q-item-label header>All Bands</q-item-label>
                 <q-item
                   v-for="band in authStore.bands"
@@ -44,11 +47,11 @@
                 </q-item>
 
                 <q-separator />
-                <q-item clickable v-close-popup @click="goDashboard">
-                  <q-item-section>Dashboard</q-item-section>
-                </q-item>
                 <q-item disable>
                   <q-item-section>Role: {{ activeBandRole }}</q-item-section>
+                </q-item>
+                <q-item clickable v-close-popup @click="goBilling">
+                  <q-item-section>Subscriptions</q-item-section>
                 </q-item>
                 <q-item clickable v-close-popup @click="handleLogout">
                   <q-item-section>Logout</q-item-section>
@@ -122,7 +125,6 @@ const isAdmin = computed(() => {
 
 const navLinks = computed(() => {
   const links = [
-    { icon: 'dashboard', label: t('nav.dashboard'), to: '/dashboard' },
     { icon: 'home', label: t('nav.home'), to: '/' },
     { icon: 'how_to_vote', label: t('nav.voting'), to: '/voting' },
     { icon: 'queue_music', label: t('nav.setlist'), to: '/setlist' },
@@ -134,7 +136,7 @@ const navLinks = computed(() => {
     links.push({ icon: 'admin_panel_settings', label: t('nav.admin'), to: '/admin' })
   }
 
-  links.push({ icon: 'payment', label: 'Billing', to: '/billing' })
+  // links.push({ icon: 'payment', label: 'Billing', to: '/billing' })
 
   return links
 })
@@ -155,6 +157,10 @@ function selectBand(id: number) {
 
 function goDashboard() {
   router.push('/dashboard')
+}
+
+function goBilling() {
+  router.push('/billing')
 }
 
 async function handleLogout() {

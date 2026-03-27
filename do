@@ -49,29 +49,8 @@ ensure_migrations_file() {
 }
 
 run_migrations_if_needed() {
-  local has_tracking_table
-  local app_table_count
-
-  has_tracking_table=$("${DB_COMPOSE[@]}" exec -T postgres psql -U bndstr -d bndstr -tAc \
-    "select case when to_regclass('public.__drizzle_migrations') is null then 0 else 1 end;")
-  app_table_count=$("${DB_COMPOSE[@]}" exec -T postgres psql -U bndstr -d bndstr -tAc \
-    "select count(*) from information_schema.tables where table_schema='public' and table_type='BASE TABLE' and table_name <> '__drizzle_migrations';")
-
-  if [[ "$has_tracking_table" == "1" || "$app_table_count" == "0" ]]; then
-    echo "Running local database migrations..."
-    "${APP_COMPOSE[@]}" run --rm dev sh -c "$COREPACK_NONINTERACTIVE corepack enable && pnpm install && pnpm --filter @bndstr/api run db:migrate"
-    return
-  fi
-
-  # Legacy local DB bootstrap: schema exists but Drizzle tracking table is missing.
-  # Apply idempotent compatibility patches so current code can run without destructive reset.
-  echo "Applying compatibility schema repairs for legacy local database..."
-  "${DB_COMPOSE[@]}" exec -T postgres psql -U bndstr -d bndstr -v ON_ERROR_STOP=1 -c \
-    "ALTER TABLE public.bands ADD COLUMN IF NOT EXISTS logo text;"
-
-  echo "Skipping migrations: schema exists but Drizzle tracking table is missing."
-  echo "Reason: running initial migration here would fail on already existing tables."
-  echo "Applied non-destructive compatibility fixes (if needed)."
+  echo "Running local database migrations..."
+  "${APP_COMPOSE[@]}" run --rm dev sh -c "$COREPACK_NONINTERACTIVE corepack enable && pnpm install && pnpm --filter @bndstr/api exec tsx src/db/migrate.ts"
 }
 
 case "$command" in
