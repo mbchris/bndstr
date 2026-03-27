@@ -2,7 +2,7 @@ import { boot } from 'quasar/wrappers'
 import { createAuthClient } from 'better-auth/vue'
 
 export const authClient = createAuthClient({
-  baseURL: import.meta.env.API_URL ?? '',
+  baseURL: process.env.API_URL ?? '',
   basePath: '/auth',
 })
 
