@@ -86,7 +86,7 @@ app.route('/api/billing', billing)
 const port = Number(process.env.PORT ?? 3001)
 
 serve({ fetch: app.fetch, port }, () => {
-  console.log(`bndstr API running on http://localhost:${port}`)
+  console.log(`bndstr API running on http://localhost:${port} (auth: ${authCanonical})`)
 })
 
 export type AppType = typeof app

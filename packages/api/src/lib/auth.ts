@@ -4,19 +4,21 @@ import { organization } from 'better-auth/plugins'
 import { db } from '../db/index.js'
 import * as schema from '../db/schema.js'
 
-function resolveAuthBasePath(apiUrl: string): string {
+function normalizeAuthBaseUrl(apiUrl: string): string {
   try {
     const parsed = new URL(apiUrl)
-    const path = parsed.pathname.replace(/\/+$/, '')
-    const prefix = path === '' || path === '/' ? '' : path
-    return `${prefix}/auth`
+    // API_URL often points to ".../api". Better Auth baseURL should stay at app origin/path prefix,
+    // while auth routes are configured via basePath.
+    parsed.pathname = parsed.pathname.replace(/\/+$/, '').replace(/\/api$/, '') || '/'
+    return parsed.toString().replace(/\/$/, '')
   } catch {
-    return '/auth'
+    return apiUrl.replace(/\/+$/, '').replace(/\/api$/, '')
   }
 }
 
-const resolvedApiUrl = process.env.API_URL ?? 'http://localhost:3001'
-export const AUTH_BASE_PATH = resolveAuthBasePath(resolvedApiUrl)
+const configuredApiUrl = process.env.API_URL ?? 'http://localhost:3001'
+const authBaseUrl = normalizeAuthBaseUrl(configuredApiUrl)
+export const AUTH_BASE_PATH = '/api/auth'
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -33,7 +35,7 @@ export const auth = betterAuth({
   }),
 
   secret: process.env.AUTH_SECRET,
-  baseURL: resolvedApiUrl,
+  baseURL: authBaseUrl,
   basePath: AUTH_BASE_PATH,
 
   trustedOrigins: (process.env.CORS_ORIGINS ?? 'http://localhost:9000')
