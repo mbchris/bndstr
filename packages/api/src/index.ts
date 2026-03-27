@@ -2,7 +2,7 @@ import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
-import { auth } from './routes/auth.js'
+import { auth } from './lib/auth.js'
 import { bands } from './routes/bands.js'
 import { songs } from './routes/songs.js'
 import { votes } from './routes/votes.js'
@@ -33,7 +33,8 @@ app.use(
 app.get('/health', (c) => c.json({ ok: true, version: process.env.GIT_REV ?? 'dev' }))
 
 // Routes
-app.route('/api/auth', auth)
+app.on(['POST', 'GET'], '/api/auth', (c) => auth.handler(c.req.raw))
+app.on(['POST', 'GET'], '/api/auth/*', (c) => auth.handler(c.req.raw))
 app.route('/api/bands', bands)
 app.route('/api/songs', songs)
 app.route('/api/votes', votes)
