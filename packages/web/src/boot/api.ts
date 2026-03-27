@@ -21,7 +21,7 @@ export const api = async (path: string, init: RequestInit = {}): Promise<Respons
     headers['Authorization'] = `Bearer ${authStore.token}`
   }
 
-  if (authStore.activeBandId) {
+  if (authStore.activeBandId && !headers['X-Band-Id']) {
     headers['X-Band-Id'] = String(authStore.activeBandId)
   }
 

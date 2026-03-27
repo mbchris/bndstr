@@ -147,4 +147,45 @@
 - used invitation codes are shown
 - Invitation codes can be invalidated
 
-**Backlog:** [docs/backlog/iter-8-dashboard.md](./backlog/iter-8-dashboard.md)
+- Everyone can login with an OAuth provider, there is no whitelist needed.
+- Users only see their own bands and the bands they have been invited to.
+- User cannot select url slug, this is autocreated by the system using "short-uuid-bandnameSanitized"
+
+## Iteration 9 — Monetization
+
+**Goal:** Subscription plans, billing, and feature limits are implemented and enforced.
+
+- Define and store subscription plans per band (`free`, `pro`, `pro-zero`)
+- Implement checkout and subscription lifecycle (monthly/yearly billing for `pro`)
+- Keep `pro-zero` as an internal non-bookable plan (assignable by dev/admin only)
+- Enforce plan limits in API and UI
+- Show current plan, limits, and upgrade actions in Dashboard/Billing
+- Ensure existing band data remains accessible after downgrade with proper read-only/limit behavior
+
+### Plan definition
+
+- `bndstr free` (0 EUR)
+- Includes:
+  - Song voting
+  - Setlist management (up to 15 songs)
+  - Gig setlist management
+  - Bierwart
+  - Calendar
+  - Band member availabilities
+  - Up to 5 band members
+
+- `bndstr pro` (29 EUR/year or 2.99 EUR/month)
+- Includes:
+  - No limitation in setlist size
+  - No limitation in band member count
+  - Shared notes on songs
+  - Personal song notes
+  - Import/export features for band data
+
+- `bndstr pro-zero` (0 EUR, internal)
+- Includes:
+  - Same capabilities as `bndstr pro`
+  - Not publicly bookable
+  - Assignable only by development/admin team
+
+**Backlog:** [`docs/backlog/iter-9-monetization.md`](./backlog/iter-9-monetization.md)

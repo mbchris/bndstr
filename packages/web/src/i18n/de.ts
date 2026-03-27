@@ -35,7 +35,7 @@ export default {
     subtitle: 'Offizieller Band-Workspace',
     google: 'Mit Google anmelden',
     github: 'Mit GitHub anmelden',
-    authorizedOnly: 'Nur autorisierte Mitglieder',
+    authorizedOnly: 'Melde dich mit deinem Google- oder GitHub-Konto an',
     clearSession: 'Sitzung löschen / Abmelden',
     clearSessionHint: 'Verwende dies, wenn du feststeckst oder das Konto wechseln möchtest.',
     errorSignin: 'Versuche dich mit einem anderen Konto anzumelden.',
@@ -199,11 +199,11 @@ export default {
   admin: {
     title: 'bndstr — Admin',
     heading: 'Admin-Dashboard',
-    bandMembers: 'Bandmitglieder (Whitelist)',
+    bandMembers: 'Bandmitglieder',
     addMember: 'Bandmitglied hinzufügen',
     editMember: 'Bandmitglied bearbeiten',
     name: 'Name',
-    emailWhitelist: 'E-Mail (Whitelist)',
+    emailWhitelist: 'E-Mail',
     emailLogin: 'E-Mail (Erforderlich zum Einloggen)',
     role: 'Rolle',
     systemStatus: 'Systemstatus',
@@ -241,3 +241,4 @@ export default {
     de: 'Deutsch',
   },
 } as const;
+

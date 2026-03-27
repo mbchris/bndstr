@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
-import { and, desc, eq, isNull } from 'drizzle-orm'
+import { and, desc, eq, gt, isNull } from 'drizzle-orm'
 import { randomBytes } from 'node:crypto'
 import { db } from '../db/index.js'
 import { bands as bandsTable, bandInviteCodes, bandMembers } from '../db/schema.js'
@@ -10,6 +10,18 @@ import { requireTenant } from '../middleware/tenant.js'
 import { requireRole } from '../middleware/rbac.js'
 
 export const bands = new Hono<AuthEnv>()
+const INVITE_TTL_DAYS = 30
+
+function inviteActiveThreshold() {
+  const threshold = new Date()
+  threshold.setDate(threshold.getDate() - INVITE_TTL_DAYS)
+  return threshold
+}
+
+function inviteExpiry(createdAt: Date | string) {
+  const base = createdAt instanceof Date ? createdAt : new Date(createdAt)
+  return new Date(base.getTime() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000)
+}
 
 // List bands the authenticated user belongs to
 bands.get('/', requireAuth, async (c) => {
@@ -32,14 +44,62 @@ bands.get('/', requireAuth, async (c) => {
 // Create a new band
 const createBandSchema = z.object({
   name: z.string().min(1).max(100),
-  slug: z.string().min(1).max(50).regex(/^[a-z0-9-]+$/),
 })
+
+function toBandSlug(name: string) {
+  const sanitized = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  const baseName = sanitized || 'band'
+  const shortId = randomBytes(4).toString('hex')
+  return `${shortId}-${baseName}`
+}
 
 bands.post('/', requireAuth, zValidator('json', createBandSchema), async (c) => {
   const userId = c.get('user').id
-  const { name, slug } = c.req.valid('json')
+  const { name } = c.req.valid('json')
+  const ownedBands = await db
+    .select({ plan: bandsTable.plan })
+    .from(bandMembers)
+    .innerJoin(bandsTable, eq(bandsTable.id, bandMembers.bandId))
+    .where(and(eq(bandMembers.userId, userId), eq(bandMembers.role, 'owner')))
 
-  const [band] = await db.insert(bandsTable).values({ name, slug }).returning()
+  const canCreateAnotherBand =
+    ownedBands.length === 0 || ownedBands.some((band) => band.plan !== 'free')
+
+  if (!canCreateAnotherBand) {
+    return c.json(
+      {
+        error: 'Free plan allows creating only one band. Upgrade to create additional bands.',
+      },
+      403,
+    )
+  }
+
+  let band:
+    | {
+        id: number
+        name: string
+        slug: string
+        plan: string
+        logo: string | null
+        stripeCustomerId: string | null
+        createdAt: Date
+      }
+    | undefined
+
+  for (let attempts = 0; attempts < 6; attempts += 1) {
+    const slug = toBandSlug(name)
+    try {
+      ;[band] = await db.insert(bandsTable).values({ name, slug }).returning()
+      break
+    } catch {
+      // Retry on rare unique slug collisions.
+    }
+  }
+
+  if (!band) return c.json({ error: 'Could not create band' }, 500)
 
   await db.insert(bandMembers).values({
     bandId: band.id,
@@ -61,7 +121,6 @@ bands.get('/:id', requireAuth, requireTenant, async (c) => {
 // Update band (admin+)
 const updateBandSchema = z.object({
   name: z.string().min(1).max(100).optional(),
-  slug: z.string().min(1).max(50).regex(/^[a-z0-9-]+$/).optional(),
 })
 
 bands.patch(
@@ -110,6 +169,7 @@ bands.get('/:id/members', requireAuth, requireTenant, async (c) => {
 // List invitation codes for the active band (admin+)
 bands.get('/:id/invite-codes', requireAuth, requireTenant, requireRole('admin'), async (c) => {
   const bandId = c.get('bandId')
+  const threshold = inviteActiveThreshold()
   const rows = await db
     .select({
       id: bandInviteCodes.id,
@@ -124,7 +184,17 @@ bands.get('/:id/invite-codes', requireAuth, requireTenant, requireRole('admin'),
     .from(bandInviteCodes)
     .where(eq(bandInviteCodes.bandId, bandId))
     .orderBy(desc(bandInviteCodes.createdAt))
-  return c.json(rows)
+  return c.json(
+    rows.map((row) => {
+      const expiresAt = inviteExpiry(row.createdAt)
+      const expired = !row.usedAt && !row.invalidatedAt && row.createdAt <= threshold
+      return {
+        ...row,
+        expiresAt,
+        expired,
+      }
+    }),
+  )
 })
 
 // Create invitation code for active band (admin+)
@@ -147,7 +217,7 @@ bands.post('/:id/invite-codes', requireAuth, requireTenant, requireRole('admin')
     | undefined
 
   for (let attempts = 0; attempts < 5; attempts += 1) {
-    const code = `BND-${randomBytes(4).toString('hex').toUpperCase()}`
+    const code = `BND-${randomBytes(12).toString('hex').toUpperCase()}`
     try {
       ;[created] = await db
         .insert(bandInviteCodes)
@@ -164,7 +234,14 @@ bands.post('/:id/invite-codes', requireAuth, requireTenant, requireRole('admin')
   }
 
   if (!created) return c.json({ error: 'Could not generate invitation code' }, 500)
-  return c.json(created, 201)
+  return c.json(
+    {
+      ...created,
+      expiresAt: inviteExpiry(created.createdAt),
+      expired: false,
+    },
+    201,
+  )
 })
 
 // Invalidate invitation code (admin+)
@@ -172,6 +249,7 @@ bands.post('/:id/invite-codes/:inviteId/invalidate', requireAuth, requireTenant,
   const bandId = c.get('bandId')
   const userId = c.get('user').id
   const inviteId = Number(c.req.param('inviteId'))
+  const threshold = inviteActiveThreshold()
 
   if (!Number.isInteger(inviteId) || inviteId <= 0) return c.json({ error: 'Invalid invitation id' }, 400)
 
@@ -182,14 +260,19 @@ bands.post('/:id/invite-codes/:inviteId/invalidate', requireAuth, requireTenant,
       and(
         eq(bandInviteCodes.id, inviteId),
         eq(bandInviteCodes.bandId, bandId),
+        gt(bandInviteCodes.createdAt, threshold),
         isNull(bandInviteCodes.usedAt),
         isNull(bandInviteCodes.invalidatedAt),
       ),
     )
     .returning()
 
-  if (!updated) return c.json({ error: 'Invitation code not found or already inactive' }, 404)
-  return c.json(updated)
+  if (!updated) return c.json({ error: 'Invitation code not found, expired, or already inactive' }, 404)
+  return c.json({
+    ...updated,
+    expiresAt: inviteExpiry(updated.createdAt),
+    expired: false,
+  })
 })
 
 const joinBandSchema = z.object({
@@ -200,16 +283,22 @@ const joinBandSchema = z.object({
 bands.post('/join', requireAuth, zValidator('json', joinBandSchema), async (c) => {
   const userId = c.get('user').id
   const code = c.req.valid('json').code.toUpperCase()
+  const threshold = inviteActiveThreshold()
 
   const [invite] = await db
     .select()
     .from(bandInviteCodes)
     .where(
-      and(eq(bandInviteCodes.code, code), isNull(bandInviteCodes.usedAt), isNull(bandInviteCodes.invalidatedAt)),
+      and(
+        eq(bandInviteCodes.code, code),
+        gt(bandInviteCodes.createdAt, threshold),
+        isNull(bandInviteCodes.usedAt),
+        isNull(bandInviteCodes.invalidatedAt),
+      ),
     )
     .limit(1)
 
-  if (!invite) return c.json({ error: 'Invitation code is invalid or already used' }, 404)
+  if (!invite) return c.json({ error: 'Invitation code is invalid, expired, or already used' }, 404)
 
   const [existing] = await db
     .select({ bandId: bandMembers.bandId })
@@ -253,6 +342,6 @@ bands.post('/join', requireAuth, zValidator('json', joinBandSchema), async (c) =
     }
   })
 
-  if (!result) return c.json({ error: 'Invitation code is invalid or already used' }, 409)
+  if (!result) return c.json({ error: 'Invitation code is invalid, expired, or already used' }, 409)
   return c.json(result, 201)
 })

@@ -9,18 +9,9 @@
           label="Band name"
           outlined
           dense
-          class="q-mb-sm"
-          @update:model-value="autoSlug"
-        />
-
-        <q-input
-          v-model="form.slug"
-          label="URL slug (a-z, 0-9, -)"
-          outlined
-          dense
           class="q-mb-md"
-          :rules="[v => /^[a-z0-9-]+$/.test(v) || 'Only lowercase letters, numbers, and hyphens']"
         />
+        <div class="text-caption text-grey-7 q-mb-md">URL slug is generated automatically after creation.</div>
 
         <q-btn
           label="Create band"
@@ -28,7 +19,7 @@
           unelevated
           class="full-width"
           :loading="loading"
-          :disable="!form.name || !form.slug"
+          :disable="!form.name"
           @click="submit"
         />
       </q-card-section>
@@ -46,14 +37,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 const loading = ref(false)
 
-const form = reactive({ name: '', slug: '' })
-
-function autoSlug(name: string) {
-  form.slug = name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-}
+const form = reactive({ name: '' })
 
 async function submit() {
   loading.value = true
