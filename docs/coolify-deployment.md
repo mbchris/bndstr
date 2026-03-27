@@ -181,7 +181,7 @@ curl https://bndstr.trmusic.de/health
 # → {"ok":true,"version":"abc1234"}
 
 # API endpoint
-curl https://bndstr.trmusic.de/api/auth/session
+curl https://bndstr.trmusic.de/api/auth/get-session
 # → {"session":null} (or session data if authenticated)
 
 # SPA loads
@@ -337,6 +337,34 @@ docker logs bndstr-migrate
 # Run manually with verbose output
 docker exec -it bndstr-api sh -c "npx drizzle-kit migrate"
 ```
+
+### Auth endpoints 404 or social sign-in 500
+
+Symptoms:
+- `POST /api/auth/sign-in/social` returns `404` or `500`
+- Logs contain `relation "verification" does not exist`
+- OAuth callback ends at `?error=UNKNOWN` / `state_not_found`
+
+Checks:
+```bash
+# Inside app/api container
+curl -i http://127.0.0.1:3001/api/auth/get-session
+curl -i http://127.0.0.1:3001/api/auth/sign-in/social
+
+# Startup log should print auth mount path
+docker logs <app-container> | grep "bndstr API running"
+```
+
+Expected:
+- Startup log includes `(auth: /api/auth)`
+- `GET /api/auth/get-session` is not `404` (typically `200` or `401`)
+
+Fixes:
+1. Ensure API auth config uses `basePath=/api/auth`.
+2. If `API_URL` contains `/api`, strip that path for Better Auth `baseURL`.
+3. Ensure Better Auth tables exist (`verification`, `session`, `account`, etc.) by running migrations.
+4. For unified `Dockerfile` deployments, run migrations before API startup.
+5. For split `docker-compose.coolify.yml` deployments, verify the `migrate` service completed successfully.
 
 ### Nginx 502 Bad Gateway
 

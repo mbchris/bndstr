@@ -68,6 +68,7 @@ scripts/           Setup and automation scripts
 - Contributor conventions: [AGENTS.md](AGENTS.md)
 - Machine-readable project context: [AI_CONTEXT.md](AI_CONTEXT.md)
 - Iteration roadmap: [docs/feature_plan.md](docs/feature_plan.md)
+- Production deployment + troubleshooting: [docs/coolify-deployment.md](docs/coolify-deployment.md)
 
 ## License
 
