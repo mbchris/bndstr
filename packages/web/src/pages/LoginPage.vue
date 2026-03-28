@@ -1,5 +1,16 @@
 <template>
-  <div>
+  <div class="login-page-wrap">
+    <q-btn
+      v-if="isDebugMode"
+      class="debug-icon-btn"
+      icon="bug_report"
+      round
+      dense
+      flat
+      color="grey-4"
+      @click="showDebugDialog = true"
+    />
+
     <q-btn
       color="white"
       text-color="dark"
@@ -28,41 +39,59 @@
       {{ error }}
     </div>
 
-    <div v-if="isDebugMode" class="q-mt-lg text-caption text-grey-5 text-center">
-      <div>API_URL (raw): {{ debugApiUrlRaw }}</div>
-      <div>API base (effective): {{ debugApiBase }}</div>
-      <div>Auth URL (effective): {{ debugAuthUrl }}</div>
-      <div>Social callback (effective): {{ socialCallbackUrl }}</div>
-    </div>
-
-    <div v-if="isDebugMode" class="q-mt-md row q-col-gutter-sm">
-      <div class="col-12 col-sm-6">
-        <q-btn
-          class="full-width"
-          color="primary"
-          outline
-          size="sm"
-          :loading="testingAuth"
-          label="Test Auth Endpoint"
-          @click="testAuthEndpoint"
-        />
-      </div>
-      <div class="col-12 col-sm-6">
-        <q-btn
-          class="full-width"
-          color="secondary"
-          outline
-          size="sm"
-          :loading="testingBands"
-          label="Test Bands Endpoint"
-          @click="testBandsEndpoint"
-        />
-      </div>
-    </div>
-
-    <div v-if="isDebugMode && debugOutput" class="q-mt-md text-caption text-grey-4 debug-output">
-      {{ debugOutput }}
-    </div>
+    <q-dialog v-if="isDebugMode" v-model="showDebugDialog">
+      <q-card class="debug-card">
+        <q-card-section class="row items-center q-pb-sm">
+          <div class="text-subtitle1">Debug Info</div>
+          <q-space />
+          <q-btn dense flat round icon="close" @click="showDebugDialog = false" />
+        </q-card-section>
+        <q-separator />
+        <q-card-section class="debug-content text-caption">
+          <div>DEBUG_MODE (raw): {{ debugModeRaw }}</div>
+          <div>Native platform: {{ isNative }}</div>
+          <div>Platform: {{ platform }}</div>
+          <div>Window origin: {{ windowOrigin }}</div>
+          <div>Window href: {{ windowHref }}</div>
+          <div>API_URL (raw): {{ debugApiUrlRaw }}</div>
+          <div>API base (effective): {{ debugApiBase }}</div>
+          <div>Auth URL (effective): {{ debugAuthUrl }}</div>
+          <div>MOBILE_CALLBACK_URL (raw): {{ debugMobileCallbackUrlRaw }}</div>
+          <div>Social callback (effective): {{ socialCallbackUrl }}</div>
+        </q-card-section>
+        <q-card-section class="q-pt-none">
+          <div class="row q-col-gutter-sm">
+            <div class="col-12 col-sm-6">
+              <q-btn
+                class="full-width"
+                color="primary"
+                outline
+                size="sm"
+                :loading="testingAuth"
+                label="Test Auth Endpoint"
+                @click="testAuthEndpoint"
+              />
+            </div>
+            <div class="col-12 col-sm-6">
+              <q-btn
+                class="full-width"
+                color="secondary"
+                outline
+                size="sm"
+                :loading="testingBands"
+                label="Test Bands Endpoint"
+                @click="testBandsEndpoint"
+              />
+            </div>
+          </div>
+        </q-card-section>
+        <q-card-section v-if="debugOutput" class="q-pt-none">
+          <div class="debug-output">
+            {{ debugOutput }}
+          </div>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
   </div>
 </template>
 
@@ -77,15 +106,22 @@ const error = ref<string | null>(null)
 const testingAuth = ref(false)
 const testingBands = ref(false)
 const debugOutput = ref('')
+const showDebugDialog = ref(false)
 const isDebugMode = (process.env.DEBUG_MODE ?? '').toLowerCase() === 'true'
+const debugModeRaw = process.env.DEBUG_MODE ?? '(unset)'
+const isNative = Capacitor.isNativePlatform()
+const platform = Capacitor.getPlatform()
+const windowOrigin = window.location.origin
+const windowHref = window.location.href
 const rawApiUrl = (process.env.API_URL ?? '').trim()
 const debugApiUrlRaw = rawApiUrl || '(empty)'
 const normalizedApiBase = (rawApiUrl || '').replace(/\/+$/, '').replace(/\/api$/, '')
 const debugApiBase = normalizedApiBase || '(same-origin /api)'
 const debugAuthUrl = normalizedApiBase ? `${normalizedApiBase}/api/auth` : '/api/auth'
-const nativeCallbackUrl =
-  (process.env.MOBILE_CALLBACK_URL ?? '').trim() || 'org.capacitor.bndstr://localhost/login'
-const socialCallbackUrl = Capacitor.isNativePlatform() ? nativeCallbackUrl : `${window.location.origin}/`
+const mobileCallbackUrlRaw = (process.env.MOBILE_CALLBACK_URL ?? '').trim()
+const debugMobileCallbackUrlRaw = mobileCallbackUrlRaw || '(empty)'
+const nativeCallbackUrl = mobileCallbackUrlRaw || 'org.capacitor.bndstr://localhost/login'
+const socialCallbackUrl = isNative ? nativeCallbackUrl : `${window.location.origin}/`
 
 function buildTestUrls(path: string): string[] {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`
@@ -184,8 +220,29 @@ async function testBandsEndpoint() {
 </script>
 
 <style scoped>
+.login-page-wrap {
+  position: relative;
+}
+
 .q-btn-github {
   border-color: rgba(255, 255, 255, 0.35);
+}
+
+.debug-icon-btn {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  z-index: 2;
+}
+
+.debug-card {
+  width: min(92vw, 760px);
+  max-height: 86vh;
+}
+
+.debug-content {
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .debug-output {
