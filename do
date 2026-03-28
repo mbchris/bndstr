@@ -6,11 +6,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 command="${1:-}"
-env_profile="${2:-local}"
+env_profile="local"
 build_apk_sign=1
 build_apk_install=1
+deploy_apk_device_id=""
+apk_api_url=""
 
 if [[ "$command" == "build-apk" ]]; then
+  env_profile="${2:-local}"
   for arg in "${@:3}"; do
     case "$arg" in
       --no-sign)
@@ -26,16 +29,33 @@ if [[ "$command" == "build-apk" ]]; then
         ;;
     esac
   done
+elif [[ "$command" == "deploy-apk" ]]; then
+  deploy_arg="${2:-}"
+  if [[ -z "$deploy_arg" ]]; then
+    env_profile="local"
+    deploy_apk_device_id=""
+  elif [[ "$deploy_arg" == "local" || "$deploy_arg" == "production" ]]; then
+    env_profile="$deploy_arg"
+    deploy_apk_device_id="${3:-}"
+  else
+    # Backwards compatibility: treat second arg as DEVICE_ID.
+    env_profile="local"
+    deploy_apk_device_id="$deploy_arg"
+  fi
+else
+  env_profile="${2:-local}"
 fi
 
 if [[ -z "$command" ]]; then
-  echo "Usage: ./do {start|dev|run|logs|stop|seed|install|build|build-apk} [local|production] [--no-sign] [--no-install]"
+  echo "Usage: ./do {start|dev|run|logs|stop|seed|install|build|build-apk|deploy-apk} [local|production] [--no-sign] [--no-install]"
+  echo "       ./do deploy-apk [local|production] [DEVICE_ID]"
   exit 1
 fi
 
-if [[ "$command" == "build-apk" ]]; then
+if [[ "$command" == "build-apk" || "$command" == "deploy-apk" ]]; then
   if [[ "$env_profile" != "local" && "$env_profile" != "production" ]]; then
-    echo "Error: build-apk supports only local or production. Use: ./do build-apk {local|production}"
+    echo "Error: $command supports only local or production."
+    echo "Use: ./do $command {local|production}"
     exit 1
   fi
 elif [[ "$env_profile" != "local" ]]; then
@@ -85,6 +105,44 @@ get_env_value() {
   printf '%s\n' "$value"
 }
 
+if [[ "$command" == "build-apk" || "$command" == "deploy-apk" ]]; then
+  apk_api_url="$(get_env_value API_URL "$env_file" || true)"
+  if [[ -z "$apk_api_url" ]]; then
+    echo "Error: API_URL is not set in $env_file."
+    if [[ "$env_profile" == "local" ]]; then
+      echo "Set API_URL in .env.local/.env for local APK builds, or use:"
+      echo "  ./do $command production"
+    else
+      echo "Set API_URL in .env.production or .env."
+    fi
+    exit 1
+  fi
+fi
+
+export_env_file() {
+  local file="$1"
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line%$'\r'}"
+    [[ -z "$line" ]] && continue
+    [[ "${line:0:1}" == "#" ]] && continue
+    [[ "$line" != *=* ]] && continue
+
+    local key="${line%%=*}"
+    local value="${line#*=}"
+
+    key="$(echo "$key" | sed -E 's/^[[:space:]]+|[[:space:]]+$//g')"
+    value="$(echo "$value" | sed -E 's/^[[:space:]]+|[[:space:]]+$//g')"
+
+    if [[ "$value" == \"*\" && "$value" == *\" ]]; then
+      value="${value:1:${#value}-2}"
+    elif [[ "$value" == \'*\' && "$value" == *\' ]]; then
+      value="${value:1:${#value}-2}"
+    fi
+
+    export "$key=$value"
+  done < "$file"
+}
+
 DB_COMPOSE=(docker compose -f docker-compose.dev.yml)
 APP_COMPOSE=(docker compose --profile dev)
 PROD_COMPOSE=(docker compose --profile prod)
@@ -107,9 +165,69 @@ run_migrations_if_needed() {
   "${APP_COMPOSE[@]}" run --rm dev sh -c "$COREPACK_NONINTERACTIVE corepack enable && pnpm install && pnpm --filter @bndstr/api exec tsx src/db/migrate.ts"
 }
 
+resolve_android_apk_path() {
+  local release_apk="packages/web/src-capacitor/android/app/build/outputs/apk/release/app-release.apk"
+  local release_signed_apk="packages/web/src-capacitor/android/app/build/outputs/apk/release/app-release-signed.apk"
+  local release_unsigned_apk="packages/web/src-capacitor/android/app/build/outputs/apk/release/app-release-unsigned.apk"
+  local debug_apk="packages/web/src-capacitor/android/app/build/outputs/apk/debug/app-debug.apk"
+
+  if [[ -f "$release_apk" ]]; then
+    printf '%s\n' "$release_apk"
+  elif [[ -f "$release_signed_apk" ]]; then
+    printf '%s\n' "$release_signed_apk"
+  elif [[ -f "$release_unsigned_apk" ]]; then
+    printf '%s\n' "$release_unsigned_apk"
+  elif [[ -f "$debug_apk" ]]; then
+    printf '%s\n' "$debug_apk"
+  else
+    return 1
+  fi
+}
+
+install_android_apk() {
+  local apk_path="$1"
+  local explicit_device_id="${2:-}"
+
+  if ! command -v adb >/dev/null 2>&1; then
+    echo "Error: adb not found in PATH."
+    echo "Install Android platform-tools."
+    exit 1
+  fi
+
+  local device_id="$explicit_device_id"
+  if [[ -z "$device_id" ]]; then
+    device_id="$(get_env_value ANDROID_DEVICE_ID "$env_file" || true)"
+  fi
+  if [[ -z "$device_id" ]]; then
+    device_id="$(get_env_value ADB_DEVICE_ID "$env_file" || true)"
+  fi
+
+  if [[ -n "$device_id" ]]; then
+    if [[ "$env_profile" == "local" && "$apk_api_url" =~ ^http://(localhost|127\.0\.0\.1)(:([0-9]+))?(/|$) ]]; then
+      local reverse_port="${BASH_REMATCH[3]:-80}"
+      echo "Configuring adb reverse for local API: tcp:$reverse_port -> tcp:$reverse_port"
+      adb -s "$device_id" reverse "tcp:$reverse_port" "tcp:$reverse_port" >/dev/null || true
+    fi
+    echo "Installing APK via adb to device: $device_id"
+    adb -s "$device_id" install -r "$apk_path"
+  else
+    if [[ "$env_profile" == "local" && "$apk_api_url" =~ ^http://(localhost|127\.0\.0\.1)(:([0-9]+))?(/|$) ]]; then
+      local reverse_port="${BASH_REMATCH[3]:-80}"
+      echo "Configuring adb reverse for local API: tcp:$reverse_port -> tcp:$reverse_port"
+      adb reverse "tcp:$reverse_port" "tcp:$reverse_port" >/dev/null || true
+    fi
+    echo "Installing APK via adb to default connected device"
+    adb install -r "$apk_path"
+  fi
+
+  echo "APK installed successfully."
+}
+
 build_android_apk() {
   local sign_apk="$1"
   local install_apk="$2"
+
+  export_env_file "$env_file"
 
   get_java_major() {
     local java_bin="$1"
@@ -122,7 +240,6 @@ build_android_apk() {
     return 1
   }
 
-  local apk_path="packages/web/src-capacitor/android/app/build/outputs/apk/debug/app-debug.apk"
   local android_local_props="packages/web/src-capacitor/android/local.properties"
   local sdk_path="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
   local min_java_major=21
@@ -232,12 +349,14 @@ build_android_apk() {
       echo "APK built successfully (unsigned): $final_apk"
       echo "Signing skipped due to --no-sign."
     fi
-  elif [[ -f "$apk_path" ]]; then
-    final_apk="$apk_path"
-    echo "APK built successfully: $final_apk"
   else
-    echo "Error: APK build finished but file not found at: $release_apk, $release_signed_apk, $release_unsigned_apk (or $apk_path)"
-    exit 1
+    final_apk="$(resolve_android_apk_path || true)"
+    if [[ -n "$final_apk" ]]; then
+      echo "APK built successfully: $final_apk"
+    else
+      echo "Error: APK build finished but file not found at: $release_apk, $release_signed_apk, $release_unsigned_apk (or debug APK)"
+      exit 1
+    fi
   fi
 
   if [[ "$install_apk" != "1" ]]; then
@@ -245,27 +364,23 @@ build_android_apk() {
     return 0
   fi
 
-  if ! command -v adb >/dev/null 2>&1; then
-    echo "Error: adb not found in PATH."
-    echo "Install Android platform-tools or run './do build-apk $env_profile --no-install'."
+  install_android_apk "$final_apk"
+}
+
+deploy_android_apk() {
+  local profile="$1"
+  local explicit_device_id="${2:-}"
+  local apk_path=""
+
+  apk_path="$(resolve_android_apk_path || true)"
+  if [[ -z "$apk_path" ]]; then
+    echo "Error: No built APK found."
+    echo "Run './do build-apk $profile --no-install' first."
     exit 1
   fi
 
-  local device_id=""
-  device_id="$(get_env_value ANDROID_DEVICE_ID "$env_file" || true)"
-  if [[ -z "$device_id" ]]; then
-    device_id="$(get_env_value ADB_DEVICE_ID "$env_file" || true)"
-  fi
-
-  echo "Installing APK via adb..."
-  if [[ -n "$device_id" ]]; then
-    echo "Using device from $env_file: $device_id"
-    adb -s "$device_id" install -r "$final_apk"
-  else
-    adb install -r "$final_apk"
-  fi
-
-  echo "APK installed successfully."
+  echo "Deploying existing APK ($profile): $apk_path"
+  install_android_apk "$apk_path" "$explicit_device_id"
 }
 
 case "$command" in
@@ -303,8 +418,12 @@ case "$command" in
   build-apk)
     build_android_apk "$build_apk_sign" "$build_apk_install"
     ;;
+  deploy-apk)
+    deploy_android_apk "$env_profile" "$deploy_apk_device_id"
+    ;;
   *)
-    echo "Usage: ./do {start|dev|run|logs|stop|seed|install|build|build-apk} [local|production] [--no-sign] [--no-install]"
+    echo "Usage: ./do {start|dev|run|logs|stop|seed|install|build|build-apk|deploy-apk} [local|production] [--no-sign] [--no-install]"
+    echo "       ./do deploy-apk [local|production] [DEVICE_ID]"
     exit 1
     ;;
 esac

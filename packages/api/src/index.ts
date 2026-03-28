@@ -23,6 +23,17 @@ type RequestLike = {
   body: RequestInit['body'] | null
 }
 
+const MOBILE_LOCAL_ORIGINS = ['capacitor://localhost', 'http://localhost', 'https://localhost']
+
+function getAllowedOrigins(): string[] {
+  const configured = (process.env.CORS_ORIGINS ?? 'http://localhost:9000')
+    .split(/[;,]/)
+    .map((o) => o.trim())
+    .filter(Boolean)
+
+  return Array.from(new Set([...configured, ...MOBILE_LOCAL_ORIGINS]))
+}
+
 function cloneRequestWithPath(req: RequestLike, pathname: string): AuthRequest {
   const url = new URL(req.url)
   url.pathname = pathname
@@ -43,10 +54,7 @@ app.use(
   '*',
   cors({
     origin: (origin) => {
-      const allowed = (process.env.CORS_ORIGINS ?? 'http://localhost:9000')
-        .split(/[;,]/)
-        .map((o) => o.trim())
-        .filter(Boolean)
+      const allowed = getAllowedOrigins()
       return allowed.includes(origin) ? origin : allowed[0]
     },
     credentials: true,

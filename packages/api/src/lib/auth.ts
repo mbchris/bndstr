@@ -19,6 +19,16 @@ function normalizeAuthBaseUrl(apiUrl: string): string {
 const configuredApiUrl = process.env.API_URL ?? 'http://localhost:3001'
 const authBaseUrl = normalizeAuthBaseUrl(configuredApiUrl)
 export const AUTH_BASE_PATH = '/api/auth'
+const MOBILE_LOCAL_ORIGINS = ['capacitor://localhost', 'http://localhost', 'https://localhost']
+
+function getTrustedOrigins(): string[] {
+  const configured = (process.env.CORS_ORIGINS ?? 'http://localhost:9000')
+    .split(/[;,]/)
+    .map((o) => o.trim())
+    .filter(Boolean)
+
+  return Array.from(new Set([...configured, ...MOBILE_LOCAL_ORIGINS]))
+}
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -38,10 +48,7 @@ export const auth = betterAuth({
   baseURL: authBaseUrl,
   basePath: AUTH_BASE_PATH,
 
-  trustedOrigins: (process.env.CORS_ORIGINS ?? 'http://localhost:9000')
-    .split(/[;,]/)
-    .map((o) => o.trim())
-    .filter(Boolean),
+  trustedOrigins: getTrustedOrigins(),
 
   socialProviders: {
     google: {

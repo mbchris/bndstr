@@ -27,6 +27,10 @@
     <div v-if="error" class="q-mt-md text-negative text-center text-body2">
       {{ error }}
     </div>
+
+    <div class="q-mt-lg text-caption text-grey-5 text-center">
+      API_URL: {{ debugApiUrl }}
+    </div>
   </div>
 </template>
 
@@ -37,14 +41,19 @@ import { authClient } from '../boot/auth'
 const loadingGoogle = ref(false)
 const loadingGithub = ref(false)
 const error = ref<string | null>(null)
+const debugApiUrl = (process.env.API_URL ?? '').trim() || '(empty)'
 
 async function loginGoogle() {
   loadingGoogle.value = true
   error.value = null
   try {
-    await authClient.signIn.social({ provider: 'google', callbackURL: window.location.origin + '/' })
+    const result = await authClient.signIn.social({ provider: 'google', callbackURL: window.location.origin + '/' })
+    if (result?.error) {
+      throw new Error(result.error.message || 'Login failed')
+    }
   } catch (e: unknown) {
     error.value = e instanceof Error ? e.message : 'Login failed'
+  } finally {
     loadingGoogle.value = false
   }
 }
@@ -53,9 +62,13 @@ async function loginGithub() {
   loadingGithub.value = true
   error.value = null
   try {
-    await authClient.signIn.social({ provider: 'github', callbackURL: window.location.origin + '/' })
+    const result = await authClient.signIn.social({ provider: 'github', callbackURL: window.location.origin + '/' })
+    if (result?.error) {
+      throw new Error(result.error.message || 'Login failed')
+    }
   } catch (e: unknown) {
     error.value = e instanceof Error ? e.message : 'Login failed'
+  } finally {
     loadingGithub.value = false
   }
 }
