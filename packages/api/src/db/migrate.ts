@@ -84,11 +84,29 @@ async function baselineLegacySchemaIfNeeded() {
   )
 }
 
+async function ensureBandsMonetizationColumns() {
+  await pool.query(`
+    ALTER TABLE "bands"
+      ADD COLUMN IF NOT EXISTS "stripe_subscription_id" text,
+      ADD COLUMN IF NOT EXISTS "subscription_status" text DEFAULT 'none' NOT NULL,
+      ADD COLUMN IF NOT EXISTS "subscription_interval" text,
+      ADD COLUMN IF NOT EXISTS "subscription_current_period_end" timestamp,
+      ADD COLUMN IF NOT EXISTS "subscription_cancel_at_period_end" boolean DEFAULT false NOT NULL;
+  `)
+
+  await pool.query(`
+    UPDATE "bands"
+    SET "plan" = 'pro'
+    WHERE "plan" = 'band';
+  `)
+}
+
 export async function runMigrations(options: { closePoolOnDone?: boolean } = {}) {
   const { closePoolOnDone = false } = options
   const started = Date.now()
   try {
     await baselineLegacySchemaIfNeeded()
+    await ensureBandsMonetizationColumns()
     await migrate(db, { migrationsFolder: MIGRATIONS_FOLDER })
     const ms = Date.now() - started
     console.log(`DB migrations applied in ${ms}ms`)

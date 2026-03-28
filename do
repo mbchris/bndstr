@@ -57,7 +57,6 @@ build_android_apk() {
   local apk_path="packages/web/src-capacitor/android/app/build/outputs/apk/debug/app-debug.apk"
   echo "Building Android APK (debug)..."
   export COREPACK_ENABLE_DOWNLOAD_PROMPT=0 CI=1
-  corepack enable
   corepack pnpm --filter @bndstr/web run build:android
 
   if [[ -f "$apk_path" ]]; then
