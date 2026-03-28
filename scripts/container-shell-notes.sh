@@ -29,6 +29,20 @@ Useful commands:
 - Seed demo data
   node /app/packages/api/dist/db/seed.js
 
+- Grant user internal pro access (dev override)
+  INTERNAL_ADMIN_TOKEN='<token>' USER_ID='<user-id>' \
+  curl -fsS -X POST http://localhost:3001/api/billing/internal/assign-user-pro \
+    -H "x-internal-admin-token: $INTERNAL_ADMIN_TOKEN" \
+    -H "content-type: application/json" \
+    --data "{\"userId\":\"$USER_ID\",\"enabled\":true}"
+
+- Assign a band to pro-zero plan
+  INTERNAL_ADMIN_TOKEN='<token>' BAND_ID='<band-id>' \
+  curl -fsS -X POST http://localhost:3001/api/billing/internal/assign-pro-zero \
+    -H "x-internal-admin-token: $INTERNAL_ADMIN_TOKEN" \
+    -H "content-type: application/json" \
+    --data "{\"bandId\":$BAND_ID}"
+
 - Check bundled migration files
   ls -la /app/packages/api/dist/db/migrations
 

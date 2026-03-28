@@ -54,9 +54,21 @@ run_migrations_if_needed() {
 }
 
 build_android_apk() {
+  get_java_major() {
+    local java_bin="$1"
+    local first_line
+    first_line="$("$java_bin" -version 2>&1 | head -n 1)"
+    if [[ "$first_line" =~ \"([0-9]+)\. ]]; then
+      printf '%s\n' "${BASH_REMATCH[1]}"
+      return 0
+    fi
+    return 1
+  }
+
   local apk_path="packages/web/src-capacitor/android/app/build/outputs/apk/debug/app-debug.apk"
   local android_local_props="packages/web/src-capacitor/android/local.properties"
   local sdk_path="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+  local min_java_major=21
 
   if [[ -z "$sdk_path" && -d "/c/Users/Chris/AppData/Local/Android/Sdk" ]]; then
     sdk_path="/c/Users/Chris/AppData/Local/Android/Sdk"
@@ -69,12 +81,35 @@ build_android_apk() {
     printf 'sdk.dir=%s\n' "$sdk_win" > "$android_local_props"
   fi
 
-  if [[ -z "${JAVA_HOME:-}" && -d "/c/Program Files/Android/Android Studio/jbr" ]]; then
-    export JAVA_HOME="/c/Program Files/Android/Android Studio/jbr"
+  local current_java_major=""
+  if [[ -n "${JAVA_HOME:-}" && -x "$JAVA_HOME/bin/java" ]]; then
+    current_java_major="$(get_java_major "$JAVA_HOME/bin/java" || true)"
+  fi
+
+  if [[ -z "$current_java_major" || "$current_java_major" -lt "$min_java_major" ]]; then
+    local android_studio_jbr="/c/Program Files/Android/Android Studio/jbr"
+    if [[ -x "$android_studio_jbr/bin/java" ]]; then
+      local jbr_java_major
+      jbr_java_major="$(get_java_major "$android_studio_jbr/bin/java" || true)"
+      if [[ -n "$jbr_java_major" && "$jbr_java_major" -ge "$min_java_major" ]]; then
+        export JAVA_HOME="$android_studio_jbr"
+      fi
+    fi
   fi
 
   if [[ -n "${JAVA_HOME:-}" && -x "$JAVA_HOME/bin/java" ]]; then
     export PATH="$JAVA_HOME/bin:$PATH"
+  fi
+
+  local active_java_major=""
+  if [[ -n "${JAVA_HOME:-}" && -x "$JAVA_HOME/bin/java" ]]; then
+    active_java_major="$(get_java_major "$JAVA_HOME/bin/java" || true)"
+  fi
+  if [[ -z "$active_java_major" || "$active_java_major" -lt "$min_java_major" ]]; then
+    echo "Error: Android build requires Java $min_java_major+."
+    echo "Current JAVA_HOME: ${JAVA_HOME:-<not set>}"
+    echo "Set JAVA_HOME to a Java $min_java_major+ runtime (Android Studio JBR 21 is recommended)."
+    exit 1
   fi
 
   echo "Building Android APK (debug)..."

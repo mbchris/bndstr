@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { requireAuth } from '../middleware/auth.js'
 import { requireTenant, type TenantEnv } from '../middleware/tenant.js'
 import { requireRole } from '../middleware/rbac.js'
-import { db } from '../db/index.js'
+import { db, pool } from '../db/index.js'
 import { bands, bandMembers, songs, votes, calendarEvents } from '../db/schema.js'
 import { eq } from 'drizzle-orm'
 import { bandHasProPlan } from '../lib/entitlements.js'
@@ -129,4 +129,35 @@ admin.get('/calendar/export', async (c) => {
   c.header('Content-Disposition', 'attachment; filename="calendar_export.json"')
 
   return c.json(events)
+})
+
+// POST /admin/db/import — execute SQL dump content
+admin.post('/db/import', async (c) => {
+  const bandId = c.get('bandId')
+  const entitlement = await ensureProBandOrThrow(bandId)
+  if (!entitlement.ok) return c.json({ error: entitlement.message }, entitlement.status as 403 | 404)
+
+  const form = await c.req.formData().catch(() => null)
+  const uploaded = form?.get('file')
+  if (!(uploaded instanceof File)) {
+    return c.json({ error: 'No SQL file uploaded' }, 400)
+  }
+
+  const filename = uploaded.name.toLowerCase()
+  if (!filename.endsWith('.sql')) {
+    return c.json({ error: 'Only .sql imports are supported' }, 400)
+  }
+
+  const sqlText = await uploaded.text()
+  if (!sqlText.trim()) {
+    return c.json({ error: 'SQL file is empty' }, 400)
+  }
+
+  try {
+    await pool.query(sqlText)
+    return c.json({ ok: true })
+  } catch (error) {
+    console.error('[admin.db.import] failed', error)
+    return c.json({ error: 'SQL import failed' }, 400)
+  }
 })

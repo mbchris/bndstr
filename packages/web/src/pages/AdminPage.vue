@@ -150,7 +150,7 @@
             <q-card-section class="q-gutter-sm">
               <q-btn class="full-width" color="grey-8" icon="download" @click="exportDb">Download Backup</q-btn>
               <q-btn class="full-width" color="orange" outline icon="upload" :loading="isImporting" @click="importInputRef?.click()">Import SQL</q-btn>
-              <input ref="importInputRef" type="file" accept=".sql,.db" class="hidden" style="display:none" @change="handleImport" />
+              <input ref="importInputRef" type="file" accept=".sql" class="hidden" style="display:none" @change="handleImport" />
               <div class="text-caption text-grey text-center">Warning: importing will overwrite existing data.</div>
             </q-card-section>
           </q-card>

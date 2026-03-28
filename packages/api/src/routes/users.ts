@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
-import { eq, and } from 'drizzle-orm'
+import { eq, and, sql } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { users, bandMembers } from '../db/schema.js'
 import { requireAuth } from '../middleware/auth.js'
@@ -85,3 +85,35 @@ usersRouter.post(
     return c.json({ success: true })
   },
 )
+
+// DELETE /users/:id — remove a member from the current band
+usersRouter.delete('/:id', requireRole('admin'), async (c) => {
+  const bandId = c.get('bandId')
+  const targetUserId = c.req.param('id')
+
+  const [membership] = await db
+    .select({ role: bandMembers.role })
+    .from(bandMembers)
+    .where(and(eq(bandMembers.bandId, bandId), eq(bandMembers.userId, targetUserId)))
+    .limit(1)
+
+  if (!membership) return c.json({ error: 'Member not found' }, 404)
+
+  if (membership.role === 'owner') {
+    const [ownerCount] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(bandMembers)
+      .where(and(eq(bandMembers.bandId, bandId), eq(bandMembers.role, 'owner')))
+      .limit(1)
+
+    if ((ownerCount?.count ?? 0) <= 1) {
+      return c.json({ error: 'Cannot remove the last owner from the band' }, 400)
+    }
+  }
+
+  await db
+    .delete(bandMembers)
+    .where(and(eq(bandMembers.bandId, bandId), eq(bandMembers.userId, targetUserId)))
+
+  return c.json({ ok: true })
+})
