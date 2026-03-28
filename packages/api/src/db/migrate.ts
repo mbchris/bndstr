@@ -101,12 +101,21 @@ async function ensureBandsMonetizationColumns() {
   `)
 }
 
+async function ensureUserProPlanColumns() {
+  await pool.query(`
+    ALTER TABLE "user"
+      ADD COLUMN IF NOT EXISTS "dev_pro_plan" boolean DEFAULT false NOT NULL,
+      ADD COLUMN IF NOT EXISTS "dev_pro_plan_assigned_at" timestamp;
+  `)
+}
+
 export async function runMigrations(options: { closePoolOnDone?: boolean } = {}) {
   const { closePoolOnDone = false } = options
   const started = Date.now()
   try {
     await baselineLegacySchemaIfNeeded()
     await ensureBandsMonetizationColumns()
+    await ensureUserProPlanColumns()
     await migrate(db, { migrationsFolder: MIGRATIONS_FOLDER })
     const ms = Date.now() - started
     console.log(`DB migrations applied in ${ms}ms`)

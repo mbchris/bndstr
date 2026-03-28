@@ -79,6 +79,8 @@ export const users = pgTable('user', {
   email: text('email').notNull().unique(),
   emailVerified: boolean('email_verified').notNull().default(false),
   image: text('image'),
+  devProPlan: boolean('dev_pro_plan').notNull().default(false),
+  devProPlanAssignedAt: timestamp('dev_pro_plan_assigned_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })

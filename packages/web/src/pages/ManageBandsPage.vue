@@ -23,7 +23,7 @@
           <q-item v-for="band in authStore.bands" :key="band.id">
             <q-item-section>
               <q-item-label class="text-weight-medium">{{ band.name }}</q-item-label>
-              <q-item-label caption>Slug: {{ band.slug }} | Role: {{ band.role }} | Plan: {{ band.plan }}</q-item-label>
+              <q-item-label caption>Slug: {{ band.slug }} | Role: {{ band.role }} | Plan: {{ band.plan }} | Pro access: {{ band.hasProPlan ? 'yes' : 'no' }}</q-item-label>
             </q-item-section>
             <q-item-section side>
               <div class="row q-gutter-xs">
@@ -219,7 +219,7 @@ const qrImageUrl = ref('')
 const canCreateBand = computed(() => {
   const ownedBands = authStore.bands.filter((band) => band.role === 'owner')
   if (ownedBands.length === 0) return true
-  return ownedBands.some((band) => band.plan !== 'free')
+  return ownedBands.some((band) => band.hasProPlan)
 })
 
 function canManageBand(role: string) {

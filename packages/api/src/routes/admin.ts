@@ -7,24 +7,17 @@ import { requireRole } from '../middleware/rbac.js'
 import { db } from '../db/index.js'
 import { bands, bandMembers, songs, votes, calendarEvents } from '../db/schema.js'
 import { eq } from 'drizzle-orm'
+import { bandHasProPlan } from '../lib/entitlements.js'
 
 export const admin = new Hono<TenantEnv>()
 
 admin.use('*', requireAuth, requireTenant, requireRole('admin'))
 
-function normalizePlan(plan: string) {
-  return plan === 'band' ? 'pro' : plan
-}
-
-function isProPlan(plan: string) {
-  const normalized = normalizePlan(plan)
-  return normalized === 'pro' || normalized === 'pro-zero'
-}
-
 async function ensureProBandOrThrow(bandId: number) {
-  const [band] = await db.select({ plan: bands.plan }).from(bands).where(eq(bands.id, bandId)).limit(1)
+  const [band] = await db.select({ id: bands.id }).from(bands).where(eq(bands.id, bandId)).limit(1)
   if (!band) return { ok: false as const, status: 404, message: 'Band not found' }
-  if (!isProPlan(band.plan)) {
+  const hasProPlan = await bandHasProPlan(bandId)
+  if (!hasProPlan) {
     return {
       ok: false as const,
       status: 403,

@@ -5,10 +5,11 @@ import { z } from 'zod'
 import Stripe from 'stripe'
 import { eq } from 'drizzle-orm'
 import { db } from '../db/index.js'
-import { bands } from '../db/schema.js'
+import { bands, users } from '../db/schema.js'
 import { requireAuth } from '../middleware/auth.js'
 import { requireTenant, type TenantEnv } from '../middleware/tenant.js'
 import { requireRole } from '../middleware/rbac.js'
+import { bandHasProPlan, normalizePlan } from '../lib/entitlements.js'
 
 export const billing = new Hono<TenantEnv>()
 
@@ -93,12 +94,6 @@ function appUrlFromRequest(c: Context) {
   return 'http://localhost:9000'
 }
 
-function normalizePlan(plan: string): PlanId {
-  if (plan === 'band') return 'pro'
-  if (plan === 'pro' || plan === 'pro-zero') return plan
-  return 'free'
-}
-
 function envPriceIdForPro(interval: BillingInterval) {
   if (interval === 'yearly') return process.env.STRIPE_PRICE_PRO_YEARLY
   return process.env.STRIPE_PRICE_PRO_MONTHLY ?? process.env.STRIPE_PRICE_PRO
@@ -171,6 +166,7 @@ billing.get('/plans', requireAuth, requireTenant, async (c) => {
 
   return c.json({
     currentPlan: normalizePlan(band.plan),
+    hasProPlan: await bandHasProPlan(bandId),
     currentSubscription: {
       status: normalizeSubscriptionStatus(band.subscriptionStatus),
       interval: (band.subscriptionInterval as BillingInterval | null) ?? null,
@@ -192,7 +188,7 @@ billing.post(
   '/google-play/activate',
   requireAuth,
   requireTenant,
-  requireRole('owner'),
+  requireRole('admin'),
   zValidator(
     'json',
     z.object({
@@ -235,7 +231,7 @@ billing.post(
   '/checkout',
   requireAuth,
   requireTenant,
-  requireRole('owner'),
+  requireRole('admin'),
   zValidator('json', z.object({ plan: z.literal('pro'), interval: z.enum(['monthly', 'yearly']) })),
   async (c) => {
     try {
@@ -282,7 +278,7 @@ billing.post(
   },
 )
 
-billing.get('/portal', requireAuth, requireTenant, requireRole('owner'), async (c) => {
+billing.get('/portal', requireAuth, requireTenant, requireRole('admin'), async (c) => {
   try {
     const stripe = getStripe()
     const bandId = c.get('bandId')
@@ -329,6 +325,40 @@ billing.post(
       .where(eq(bands.id, bandId))
 
     return c.json({ ok: true })
+  },
+)
+
+billing.post(
+  '/internal/assign-user-pro',
+  zValidator(
+    'json',
+    z.object({
+      userId: z.string().min(1),
+      enabled: z.boolean().default(true),
+    }),
+  ),
+  async (c) => {
+    const token = c.req.header('x-internal-admin-token')
+    if (!token || token !== process.env.INTERNAL_ADMIN_TOKEN) {
+      return c.json({ error: 'Forbidden' }, 403)
+    }
+
+    const { userId, enabled } = c.req.valid('json')
+    const [updated] = await db
+      .update(users)
+      .set({
+        devProPlan: enabled,
+        devProPlanAssignedAt: enabled ? new Date() : null,
+      })
+      .where(eq(users.id, userId))
+      .returning({
+        id: users.id,
+        devProPlan: users.devProPlan,
+        devProPlanAssignedAt: users.devProPlanAssignedAt,
+      })
+
+    if (!updated) return c.json({ error: 'User not found' }, 404)
+    return c.json({ ok: true, user: updated })
   },
 )
 

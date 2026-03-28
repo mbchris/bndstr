@@ -4,6 +4,7 @@
       <div class="col">
         <div class="text-h5">Billing</div>
         <div class="text-caption text-grey-6">Current plan: <span class="text-weight-bold">{{ currentPlanLabel }}</span></div>
+        <div class="text-caption text-grey-6">Band pro access: <span class="text-weight-bold">{{ hasProPlan ? 'Enabled' : 'Disabled' }}</span></div>
         <div class="text-caption text-grey-6">Status: <span class="text-weight-bold">{{ statusLabel }}</span></div>
         <div v-if="subscriptionIntervalLabel" class="text-caption text-grey-6">Interval: {{ subscriptionIntervalLabel }}</div>
         <div v-if="renewalLabel" class="text-caption text-grey-6">{{ renewalLabel }}</div>
@@ -14,15 +15,15 @@
           color="primary"
           icon="manage_accounts"
           label="Manage subscription"
-          :disable="!isOwner || loadingPortal || currentPlan === 'pro-zero'"
+          :disable="!canManageBilling || loadingPortal || currentPlan === 'pro-zero'"
           :loading="loadingPortal"
           @click="openPortal"
         />
       </div>
     </div>
 
-    <q-banner v-if="!isOwner" class="bg-grey-9 text-white q-mb-md rounded-borders">
-      Only band owners can change subscription plans.
+    <q-banner v-if="!canManageBilling" class="bg-grey-9 text-white q-mb-md rounded-borders">
+      Only band admins or owners can change subscription plans.
     </q-banner>
 
     <div class="row q-col-gutter-md">
@@ -59,7 +60,7 @@
                 color="primary"
                 size="sm"
                 label="Choose monthly"
-                :disable="!isOwner || loadingCheckout"
+                :disable="!canManageBilling || loadingCheckout"
                 :loading="loadingCheckout && selectedPlan === 'pro' && selectedInterval === 'monthly'"
                 @click="startCheckout('monthly')"
               />
@@ -68,7 +69,7 @@
                 size="sm"
                 outline
                 label="Choose yearly"
-                :disable="!isOwner || loadingCheckout"
+                :disable="!canManageBilling || loadingCheckout"
                 :loading="loadingCheckout && selectedPlan === 'pro' && selectedInterval === 'yearly'"
                 @click="startCheckout('yearly')"
               />
@@ -128,6 +129,7 @@ const route = useRoute()
 
 const plans = ref<Plan[]>([])
 const currentPlan = ref<PlanId>('free')
+const hasProPlan = ref(false)
 const subscriptionStatus = ref<SubscriptionStatus>('none')
 const subscriptionInterval = ref<BillingInterval | null>(null)
 const currentPeriodEnd = ref<string | null>(null)
@@ -141,7 +143,10 @@ const playReady = ref(false)
 const playProducts = ref<Record<BillingInterval, PlayBillingProduct | null>>({ monthly: null, yearly: null })
 const playProductIds = ref<Record<BillingInterval, string | null>>({ monthly: null, yearly: null })
 
-const isOwner = computed(() => authStore.activeBand?.role === 'owner')
+const canManageBilling = computed(() => {
+  const role = authStore.activeBand?.role
+  return role === 'owner' || role === 'admin'
+})
 
 const currentPlanLabel = computed(() => {
   const plan = plans.value.find((p) => p.id === currentPlan.value)
@@ -188,6 +193,7 @@ async function loadBilling() {
   try {
     const data = await apiJson<{
       currentPlan: PlanId
+      hasProPlan: boolean
       currentSubscription: {
         status: SubscriptionStatus
         interval: BillingInterval | null
@@ -202,6 +208,7 @@ async function loadBilling() {
     }>('/billing/plans')
 
     currentPlan.value = data.currentPlan
+    hasProPlan.value = data.hasProPlan
     subscriptionStatus.value = data.currentSubscription.status
     subscriptionInterval.value = data.currentSubscription.interval
     currentPeriodEnd.value = data.currentSubscription.currentPeriodEnd

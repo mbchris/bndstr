@@ -3,27 +3,14 @@ import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { eq, and, asc, sql } from 'drizzle-orm'
 import { db } from '../db/index.js'
-import { songs as songsTable, votes as votesTable, personalNotes, bands } from '../db/schema.js'
+import { songs as songsTable, votes as votesTable, personalNotes } from '../db/schema.js'
 import { requireAuth } from '../middleware/auth.js'
 import { requireTenant, type TenantEnv } from '../middleware/tenant.js'
 import { fetchSpotifyMetadata } from '../lib/spotify.js'
+import { bandHasProPlan } from '../lib/entitlements.js'
 
 export const songs = new Hono<TenantEnv>()
 const FREE_SETLIST_LIMIT = 15
-
-function normalizePlan(plan: string) {
-  return plan === 'band' ? 'pro' : plan
-}
-
-function isProPlan(plan: string) {
-  const normalized = normalizePlan(plan)
-  return normalized === 'pro' || normalized === 'pro-zero'
-}
-
-async function bandPlanFor(bandId: number) {
-  const [band] = await db.select({ plan: bands.plan }).from(bands).where(eq(bands.id, bandId)).limit(1)
-  return normalizePlan(band?.plan ?? 'free')
-}
 
 async function setlistSongCountForBand(bandId: number, excludeSongId?: number) {
   const conditions = [
@@ -105,13 +92,13 @@ songs.post('/', zValidator('json', createSongSchema), async (c) => {
   const bandId = c.get('bandId')
   const userId = c.get('user').id
   const body = c.req.valid('json')
-  const plan = await bandPlanFor(bandId)
+  const hasProPlan = await bandHasProPlan(bandId)
 
-  if (!isProPlan(plan) && body.notes !== undefined) {
+  if (!hasProPlan && body.notes !== undefined) {
     return c.json({ error: 'Song shared notes are available on pro plans only.' }, 403)
   }
 
-  if (!isProPlan(plan) && body.isSetlist && body.type === 'song') {
+  if (!hasProPlan && body.isSetlist && body.type === 'song') {
     const setlistCount = await setlistSongCountForBand(bandId)
     if (setlistCount >= FREE_SETLIST_LIMIT) {
       return c.json(
@@ -153,7 +140,7 @@ songs.put('/:id', async (c) => {
   const bandId = c.get('bandId')
   const id = Number(c.req.param('id'))
   const body = await c.req.json()
-  const plan = await bandPlanFor(bandId)
+  const hasProPlan = await bandHasProPlan(bandId)
 
   const [existing] = await db
     .select()
@@ -163,7 +150,7 @@ songs.put('/:id', async (c) => {
 
   if (!existing) return c.json({ error: 'Not found' }, 404)
 
-  if (!isProPlan(plan) && body.notes !== undefined) {
+  if (!hasProPlan && body.notes !== undefined) {
     return c.json({ error: 'Song shared notes are available on pro plans only.' }, 403)
   }
 
@@ -171,7 +158,7 @@ songs.put('/:id', async (c) => {
   const nextType = body.type ?? existing.type
   const becomesCountedSetlistSong = nextIsSetlist && nextType === 'song' && !(existing.isSetlist && existing.type === 'song')
 
-  if (!isProPlan(plan) && becomesCountedSetlistSong) {
+  if (!hasProPlan && becomesCountedSetlistSong) {
     const setlistCount = await setlistSongCountForBand(bandId, id)
     if (setlistCount >= FREE_SETLIST_LIMIT) {
       return c.json(
@@ -267,8 +254,8 @@ songs.get('/notes', async (c) => {
   const userId = c.get('user').id
   const songId = Number(c.req.query('songId'))
   if (!songId) return c.json({ error: 'songId is required' }, 400)
-  const plan = await bandPlanFor(bandId)
-  if (!isProPlan(plan)) return c.json({ error: 'Personal notes are available on pro plans only.' }, 403)
+  const hasProPlan = await bandHasProPlan(bandId)
+  if (!hasProPlan) return c.json({ error: 'Personal notes are available on pro plans only.' }, 403)
 
   const [note] = await db
     .select()
@@ -293,8 +280,8 @@ songs.post(
     const bandId = c.get('bandId')
     const userId = c.get('user').id
     const { songId, content } = c.req.valid('json')
-    const plan = await bandPlanFor(bandId)
-    if (!isProPlan(plan)) return c.json({ error: 'Personal notes are available on pro plans only.' }, 403)
+    const hasProPlan = await bandHasProPlan(bandId)
+    if (!hasProPlan) return c.json({ error: 'Personal notes are available on pro plans only.' }, 403)
 
     const existing = await db
       .select()

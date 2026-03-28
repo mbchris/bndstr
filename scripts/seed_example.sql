@@ -25,6 +25,10 @@ INSERT INTO "user" (id, name, email, email_verified, image, created_at, updated_
 VALUES ('legacy-user-6', 'Chris', 'christian.familie.schneider@gmail.com', true, NULL, (CASE WHEN 1774087137000 < 100000000000 THEN to_timestamp(1774087137000) ELSE to_timestamp(1774087137000 / 1000.0) END), (CASE WHEN 1774087137000 < 100000000000 THEN to_timestamp(1774087137000) ELSE to_timestamp(1774087137000 / 1000.0) END))
 ON CONFLICT (id) DO NOTHING;
 
+UPDATE "user"
+SET dev_pro_plan = true, dev_pro_plan_assigned_at = now()
+WHERE id = 'legacy-user-1';
+
 INSERT INTO band_members (band_id, user_id, role, sort_order, is_hidden, beer_count, joined_at)
 VALUES ((SELECT id FROM bands WHERE slug = 'legacy-imported-band'), 'legacy-user-1', 'owner', 1, true, 0, (CASE WHEN 1774085091233 < 100000000000 THEN to_timestamp(1774085091233) ELSE to_timestamp(1774085091233 / 1000.0) END))
 ON CONFLICT (band_id, user_id) DO NOTHING;

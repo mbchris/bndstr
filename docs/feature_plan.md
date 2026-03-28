@@ -201,3 +201,17 @@
 **Backlog:** [`docs/backlog/iter-10-android-app.md`](./backlog/iter-10-android-app.md)
 
 
+
+## Iteration 11 - User self-registration
+
+**Goal:** Users who do not want to use google/github for logging in can create an account
+
+- An account can be created for an email address
+- The email address needs to be verified
+- The user can change the own email address (needs to be re-verified)
+- The user can set a password
+- Passwort is stored encrypted
+- User can reset the password
+- User can delete the account
+
+

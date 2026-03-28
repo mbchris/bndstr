@@ -22,6 +22,13 @@
       "when": 1774639800000,
       "tag": "0002_band_invite_codes",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1774700000000,
+      "tag": "0004_user_pro_plan",
+      "breakpoints": true
     }
   ]
 }

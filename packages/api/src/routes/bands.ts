@@ -8,14 +8,11 @@ import { bands as bandsTable, bandInviteCodes, bandMembers } from '../db/schema.
 import { requireAuth, type AuthEnv } from '../middleware/auth.js'
 import { requireTenant } from '../middleware/tenant.js'
 import { requireRole } from '../middleware/rbac.js'
+import { bandHasProPlan, normalizePlan, userHasDeveloperProPlan } from '../lib/entitlements.js'
 
 export const bands = new Hono<AuthEnv>()
 const INVITE_TTL_DAYS = 30
 const FREE_MEMBER_LIMIT = 5
-
-function normalizePlan(plan: string) {
-  return plan === 'band' ? 'pro' : plan
-}
 
 function inviteActiveThreshold() {
   const threshold = new Date()
@@ -47,7 +44,17 @@ bands.get('/', requireAuth, async (c) => {
     .from(bandMembers)
     .innerJoin(bandsTable, eq(bandsTable.id, bandMembers.bandId))
     .where(eq(bandMembers.userId, userId))
-  return c.json(rows.map((row) => ({ ...row, plan: normalizePlan(row.plan) })))
+  const enriched = await Promise.all(
+    rows.map(async (row) => {
+      const normalizedPlan = normalizePlan(row.plan)
+      return {
+        ...row,
+        plan: normalizedPlan,
+        hasProPlan: await bandHasProPlan(row.id),
+      }
+    }),
+  )
+  return c.json(enriched)
 })
 
 // Create a new band
@@ -73,9 +80,10 @@ bands.post('/', requireAuth, zValidator('json', createBandSchema), async (c) => 
     .from(bandMembers)
     .innerJoin(bandsTable, eq(bandsTable.id, bandMembers.bandId))
     .where(and(eq(bandMembers.userId, userId), eq(bandMembers.role, 'owner')))
+  const userHasProPlan = await userHasDeveloperProPlan(userId)
 
   const canCreateAnotherBand =
-    ownedBands.length === 0 || ownedBands.some((band) => band.plan !== 'free')
+    userHasProPlan || ownedBands.length === 0 || ownedBands.some((band) => normalizePlan(band.plan) !== 'free')
 
   if (!canCreateAnotherBand) {
     return c.json(
@@ -116,7 +124,8 @@ bands.post('/', requireAuth, zValidator('json', createBandSchema), async (c) => 
     role: 'owner',
   })
 
-  return c.json(band, 201)
+  const normalizedPlan = normalizePlan(band.plan)
+  return c.json({ ...band, plan: normalizedPlan, hasProPlan: await bandHasProPlan(band.id) }, 201)
 })
 
 // Get band details (must be a member)
@@ -124,7 +133,8 @@ bands.get('/:id', requireAuth, requireTenant, async (c) => {
   const bandId = c.get('bandId')
   const [band] = await db.select().from(bandsTable).where(eq(bandsTable.id, bandId)).limit(1)
   if (!band) return c.json({ error: 'Not found' }, 404)
-  return c.json({ ...band, plan: normalizePlan(band.plan) })
+  const normalizedPlan = normalizePlan(band.plan)
+  return c.json({ ...band, plan: normalizedPlan, hasProPlan: await bandHasProPlan(band.id) })
 })
 
 // Update band (admin+)
@@ -318,15 +328,15 @@ bands.post('/join', requireAuth, zValidator('json', joinBandSchema), async (c) =
   if (existing) return c.json({ error: 'You are already a member of this band' }, 409)
 
   const [targetBand] = await db
-    .select({ plan: bandsTable.plan })
+    .select({ id: bandsTable.id })
     .from(bandsTable)
     .where(eq(bandsTable.id, invite.bandId))
     .limit(1)
 
   if (!targetBand) return c.json({ error: 'Band not found' }, 404)
 
-  const isFreePlan = normalizePlan(targetBand.plan) === 'free'
-  if (isFreePlan) {
+  const hasProPlan = await bandHasProPlan(targetBand.id)
+  if (!hasProPlan) {
     const members = await db
       .select({ userId: bandMembers.userId })
       .from(bandMembers)
@@ -363,11 +373,13 @@ bands.post('/join', requireAuth, zValidator('json', joinBandSchema), async (c) =
     const [band] = await tx.select().from(bandsTable).where(eq(bandsTable.id, invite.bandId)).limit(1)
     if (!band) return null
 
+    const normalizedPlan = normalizePlan(band.plan)
     return {
       id: band.id,
       name: band.name,
       slug: band.slug,
-      plan: normalizePlan(band.plan),
+      plan: normalizedPlan,
+      hasProPlan: await bandHasProPlan(band.id),
       logo: band.logo,
       role: 'member',
     }
