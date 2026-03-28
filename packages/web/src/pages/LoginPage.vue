@@ -160,7 +160,28 @@ const debugApiBase = normalizedApiBase || '(same-origin /api)'
 const debugAuthUrl = normalizedApiBase ? `${normalizedApiBase}/api/auth` : '/api/auth'
 const mobileCallbackUrlRaw = (process.env.MOBILE_CALLBACK_URL ?? '').trim()
 const debugMobileCallbackUrlRaw = mobileCallbackUrlRaw || '(empty)'
-const nativeCallbackUrl = mobileCallbackUrlRaw || 'org.capacitor.bndstr://localhost/login'
+function normalizeNativeCallbackBase(url: string): string {
+  const fallback = 'org.capacitor.bndstr://localhost/#/login'
+  const input = url.trim()
+  if (!input) return fallback
+
+  if (input.includes('#')) return input
+
+  if (/\/login\/?$/.test(input)) {
+    return input.replace(/\/login\/?$/, '/#/login')
+  }
+
+  return `${input.replace(/\/+$/, '')}/#/login`
+}
+
+function appendQueryToHashRoute(url: string, key: string, value: string): string {
+  const [base, hash = ''] = url.split('#', 2)
+  const hashValue = hash || '/login'
+  const joiner = hashValue.includes('?') ? '&' : '?'
+  return `${base}#${hashValue}${joiner}${encodeURIComponent(key)}=${encodeURIComponent(value)}`
+}
+
+const nativeCallbackUrl = normalizeNativeCallbackBase(mobileCallbackUrlRaw)
 const nativeOauthStartUrlBase = normalizedApiBase ? `${normalizedApiBase}/api/mobile-auth/start` : ''
 
 function sanitizeRedirectPath(value: unknown): string {
@@ -187,7 +208,7 @@ const webCallbackUrl =
   redirectPath === '/'
     ? `${window.location.origin}/login`
     : `${window.location.origin}/login?redirect=${encodeURIComponent(redirectPath)}`
-const nativeAppCallbackUrl = appendQueryParam(nativeCallbackUrl, 'redirect', redirectPath)
+const nativeAppCallbackUrl = appendQueryToHashRoute(nativeCallbackUrl, 'redirect', redirectPath)
 const nativeBridgeCallbackUrl = normalizedApiBase
   ? `${normalizedApiBase}/api/mobile-auth/complete?appCallbackURL=${encodeURIComponent(nativeAppCallbackUrl)}`
   : ''
