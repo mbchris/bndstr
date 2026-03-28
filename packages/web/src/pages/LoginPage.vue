@@ -35,6 +35,19 @@
       @click="loginGithub"
     />
 
+    <div v-if="isDebugMode" class="q-mt-sm">
+      <q-btn
+        class="full-width"
+        color="grey-7"
+        text-color="white"
+        outline
+        size="sm"
+        icon="bug_report"
+        label="Open Debug"
+        @click="showDebugDialog = true"
+      />
+    </div>
+
     <div v-if="error" class="q-mt-md text-negative text-center text-body2">
       {{ error }}
     </div>

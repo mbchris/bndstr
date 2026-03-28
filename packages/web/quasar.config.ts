@@ -1,9 +1,65 @@
 import { configure } from 'quasar/wrappers'
 import { execSync } from 'node:child_process'
+import { existsSync, readFileSync } from 'node:fs'
+import path from 'node:path'
+
+const repoRoot = path.resolve(__dirname, '../..')
+
+function stripWrappingQuotes(value: string): string {
+  if (
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"))
+  ) {
+    return value.slice(1, -1)
+  }
+  return value
+}
+
+function readEnvValueFromFile(filePath: string, key: string): string | undefined {
+  if (!existsSync(filePath)) return undefined
+
+  const lines = readFileSync(filePath, 'utf8').split(/\r?\n/)
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith('#')) continue
+    const idx = trimmed.indexOf('=')
+    if (idx <= 0) continue
+    const lineKey = trimmed.slice(0, idx).trim()
+    if (lineKey !== key) continue
+    const value = trimmed.slice(idx + 1).trim()
+    return stripWrappingQuotes(value)
+  }
+
+  return undefined
+}
+
+function getEnvValue(key: string): string {
+  const direct = process.env[key]
+  if (direct !== undefined && direct !== '') return direct
+
+  const configuredEnvFile = process.env.ENV_FILE?.trim()
+  const envFilePath = configuredEnvFile
+    ? path.isAbsolute(configuredEnvFile)
+      ? configuredEnvFile
+      : path.resolve(repoRoot, configuredEnvFile)
+    : undefined
+
+  const candidates = [envFilePath, path.resolve(repoRoot, '.env.web'), path.resolve(repoRoot, '.env.local'), path.resolve(repoRoot, '.env')].filter(
+    (v): v is string => Boolean(v),
+  )
+
+  for (const candidate of candidates) {
+    const value = readEnvValueFromFile(candidate, key)
+    if (value !== undefined && value !== '') return value
+  }
+
+  return ''
+}
 
 function readGitRev(): string {
-  if (process.env.GIT_REV?.trim()) {
-    return process.env.GIT_REV.trim()
+  const configuredGitRev = getEnvValue('GIT_REV').trim()
+  if (configuredGitRev) {
+    return configuredGitRev
   }
 
   try {
@@ -14,10 +70,10 @@ function readGitRev(): string {
 }
 
 export default configure(function (/* ctx */) {
-  const rawApiUrl = (process.env.API_URL || '').trim()
-  const debugMode = (process.env.DEBUG_MODE || '').trim().toLowerCase() === 'true'
+  const rawApiUrl = getEnvValue('API_URL').trim()
+  const debugMode = getEnvValue('DEBUG_MODE').trim().toLowerCase() === 'true'
   const gitRev = readGitRev()
-  const mobileCallbackUrl = (process.env.MOBILE_CALLBACK_URL || '').trim() || 'org.capacitor.bndstr://localhost/login'
+  const mobileCallbackUrl = getEnvValue('MOBILE_CALLBACK_URL').trim() || 'org.capacitor.bndstr://localhost/login'
   const apiTarget =
     process.env.API_TARGET ||
     (rawApiUrl.startsWith('http://') || rawApiUrl.startsWith('https://')
