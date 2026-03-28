@@ -181,6 +181,15 @@ body.body--dark {
   }
 }
 
+// Header actions (theme toggle, locale switch, profile) need contrast in light mode.
+body.body--light .header-action-btn {
+  color: #111827 !important;
+}
+
+body.body--light .header-action-btn.q-btn--flat:hover {
+  background: rgba(17, 24, 39, 0.08);
+}
+
 // ─── Scrollbar — minimal ─────────────────────────────────────────
 ::-webkit-scrollbar {
   width: 6px;

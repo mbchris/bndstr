@@ -55,14 +55,43 @@ run_migrations_if_needed() {
 
 build_android_apk() {
   local apk_path="packages/web/src-capacitor/android/app/build/outputs/apk/debug/app-debug.apk"
+  local android_local_props="packages/web/src-capacitor/android/local.properties"
+  local sdk_path="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+
+  if [[ -z "$sdk_path" && -d "/c/Users/Chris/AppData/Local/Android/Sdk" ]]; then
+    sdk_path="/c/Users/Chris/AppData/Local/Android/Sdk"
+  fi
+
+  if [[ -n "$sdk_path" ]]; then
+    mkdir -p "$(dirname "$android_local_props")"
+    local sdk_win
+    sdk_win="$(printf '%s' "$sdk_path" | sed 's#^/c/#C:/#; s#/#\\\\#g')"
+    printf 'sdk.dir=%s\n' "$sdk_win" > "$android_local_props"
+  fi
+
+  if [[ -z "${JAVA_HOME:-}" && -d "/c/Program Files/Android/Android Studio/jbr" ]]; then
+    export JAVA_HOME="/c/Program Files/Android/Android Studio/jbr"
+  fi
+
+  if [[ -n "${JAVA_HOME:-}" && -x "$JAVA_HOME/bin/java" ]]; then
+    export PATH="$JAVA_HOME/bin:$PATH"
+  fi
+
   echo "Building Android APK (debug)..."
   export COREPACK_ENABLE_DOWNLOAD_PROMPT=0 CI=1
   corepack pnpm --filter @bndstr/web run build:android
 
-  if [[ -f "$apk_path" ]]; then
+  local release_apk="packages/web/src-capacitor/android/app/build/outputs/apk/release/app-release.apk"
+  local release_unsigned_apk="packages/web/src-capacitor/android/app/build/outputs/apk/release/app-release-unsigned.apk"
+
+  if [[ -f "$release_apk" ]]; then
+    echo "APK built successfully: $release_apk"
+  elif [[ -f "$release_unsigned_apk" ]]; then
+    echo "APK built successfully: $release_unsigned_apk"
+  elif [[ -f "$apk_path" ]]; then
     echo "APK built successfully: $apk_path"
   else
-    echo "Error: APK build finished but file not found at: $apk_path"
+    echo "Error: APK build finished but file not found at: $release_apk, $release_unsigned_apk (or $apk_path)"
     exit 1
   fi
 }

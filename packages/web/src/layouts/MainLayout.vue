@@ -13,6 +13,7 @@
             flat
             round
             dense
+            class="header-action-btn"
             :icon="$q.dark.isActive ? 'light_mode' : 'dark_mode'"
             @click="toggleDarkMode"
             :title="$q.dark.isActive ? 'Switch to light mode' : 'Switch to dark mode'"
@@ -21,12 +22,12 @@
           <q-btn
             flat
             dense
-            class="text-weight-bold"
+            class="text-weight-bold header-action-btn"
             :label="locale === 'en' ? 'DE' : 'EN'"
             @click="toggleLocale"
           />
 
-          <q-btn v-if="!isBillingRoute" flat round dense icon="account_circle">
+          <q-btn v-if="!isBillingRoute" flat round dense class="header-action-btn" icon="account_circle">
             <q-menu anchor="bottom right" self="top right">
               <q-list style="min-width: 260px">
                 <q-item clickable v-close-popup @click="goDashboard">
