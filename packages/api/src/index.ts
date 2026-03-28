@@ -13,6 +13,9 @@ import { usersRouter as users } from './routes/users.js'
 import { admin } from './routes/admin.js'
 import { billing } from './routes/billing.js'
 import { runMigrations } from './db/migrate.js'
+import { db } from './db/index.js'
+import { sessions } from './db/schema.js'
+import { eq } from 'drizzle-orm'
 
 const app = new Hono()
 type AuthRequest = Parameters<typeof auth.handler>[0]
@@ -133,6 +136,40 @@ app.get('/api/mobile-auth/start', (c) => {
 </html>`
 
   return c.html(html)
+})
+
+// Native OAuth completion bridge:
+// Better Auth callback lands here first (same browser context where auth cookie exists).
+// We exchange session cookie -> bearer token and deep-link into the app with the token.
+app.get('/api/mobile-auth/complete', async (c) => {
+  const appCallbackURL = (c.req.query('appCallbackURL') ?? '').trim()
+  if (!appCallbackURL) {
+    return c.text('Missing appCallbackURL', 400)
+  }
+
+  try {
+    const current = await auth.api.getSession({ headers: c.req.raw.headers })
+    const sessionId = current?.session?.id
+    if (!sessionId) {
+      const target = `${appCallbackURL}${appCallbackURL.includes('?') ? '&' : '?'}error=missing_session`
+      return c.redirect(target, 302)
+    }
+
+    const row = await db.select({ token: sessions.token }).from(sessions).where(eq(sessions.id, sessionId)).limit(1)
+    const token = row[0]?.token
+
+    if (!token) {
+      const target = `${appCallbackURL}${appCallbackURL.includes('?') ? '&' : '?'}error=missing_token`
+      return c.redirect(target, 302)
+    }
+
+    const target =
+      `${appCallbackURL}${appCallbackURL.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}`
+    return c.redirect(target, 302)
+  } catch {
+    const target = `${appCallbackURL}${appCallbackURL.includes('?') ? '&' : '?'}error=token_exchange_failed`
+    return c.redirect(target, 302)
+  }
 })
 
 // Routes

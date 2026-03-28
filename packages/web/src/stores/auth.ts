@@ -33,17 +33,50 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isAuthenticated = computed(() => !!user.value)
   const activeBand = computed(() => bands.value.find((b) => b.id === activeBandId.value) ?? null)
+  const apiBase = (process.env.API_URL ?? '').replace(/\/+$/, '').replace(/\/api$/, '')
+
+  async function loadSessionFromBearer() {
+    if (!token.value) return null
+
+    const res = await fetch(`${apiBase}/api/auth/get-session`, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token.value}`,
+      },
+      credentials: 'include',
+    })
+
+    if (!res.ok) {
+      return null
+    }
+
+    const data = (await res.json()) as { user?: User } | null
+    return data?.user ?? null
+  }
 
   async function loadSession() {
     try {
-      const { data } = await authClient.getSession()
-      if (data?.user) {
-        user.value = {
-          id: data.user.id,
-          name: data.user.name,
-          email: data.user.email,
-          image: data.user.image,
+      let resolvedUser: User | null = null
+
+      if (token.value) {
+        resolvedUser = await loadSessionFromBearer()
+      }
+
+      if (!resolvedUser) {
+        const { data } = await authClient.getSession()
+        if (data?.user) {
+          resolvedUser = {
+            id: data.user.id,
+            name: data.user.name,
+            email: data.user.email,
+            image: data.user.image,
+          }
         }
+      }
+
+      if (resolvedUser) {
+        user.value = resolvedUser
       } else {
         user.value = null
         token.value = null

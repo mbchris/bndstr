@@ -66,11 +66,18 @@
           <div>Platform: {{ platform }}</div>
           <div>Window origin: {{ windowOrigin }}</div>
           <div>Window href: {{ windowHref }}</div>
+          <div>Route redirect (raw): {{ routeRedirectRaw }}</div>
+          <div>Route token (raw): {{ routeTokenRaw ? '(present)' : '(absent)' }}</div>
+          <div>Redirect path (sanitized): {{ redirectPath }}</div>
           <div>API_URL (raw): {{ debugApiUrlRaw }}</div>
           <div>API base (effective): {{ debugApiBase }}</div>
           <div>Auth URL (effective): {{ debugAuthUrl }}</div>
           <div>MOBILE_CALLBACK_URL (raw): {{ debugMobileCallbackUrlRaw }}</div>
+          <div>Native app callback (effective): {{ nativeAppCallbackUrl }}</div>
+          <div>Native bridge callback (effective): {{ nativeBridgeCallbackUrl || '(missing API_URL)' }}</div>
+          <div>Web callback (effective): {{ webCallbackUrl }}</div>
           <div>Social callback (effective): {{ socialCallbackUrl }}</div>
+          <div>User agent: {{ userAgent }}</div>
         </q-card-section>
         <q-card-section class="q-pt-none">
           <div class="row q-col-gutter-sm">
@@ -96,6 +103,17 @@
                 @click="testBandsEndpoint"
               />
             </div>
+            <div class="col-12">
+              <q-btn
+                class="full-width"
+                color="accent"
+                outline
+                size="sm"
+                :loading="testingSession"
+                label="Probe Session + CORS"
+                @click="probeSessionAndCors"
+              />
+            </div>
           </div>
         </q-card-section>
         <q-card-section v-if="debugOutput" class="q-pt-none">
@@ -109,16 +127,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { Capacitor } from '@capacitor/core'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { authClient } from '../boot/auth'
+import { useAuthStore } from '../stores/auth'
 
 const loadingGoogle = ref(false)
 const loadingGithub = ref(false)
 const error = ref<string | null>(null)
 const testingAuth = ref(false)
 const testingBands = ref(false)
+const testingSession = ref(false)
 const debugOutput = ref('')
 const showDebugDialog = ref(false)
 const isDebugMode = (process.env.DEBUG_MODE ?? '').toLowerCase() === 'true'
@@ -126,8 +146,11 @@ const debugModeRaw = process.env.DEBUG_MODE ?? '(unset)'
 const isNative = Capacitor.isNativePlatform()
 const platform = Capacitor.getPlatform()
 const route = useRoute()
+const router = useRouter()
+const authStore = useAuthStore()
 const windowOrigin = window.location.origin
 const windowHref = window.location.href
+const userAgent = navigator.userAgent
 const rawApiUrl = (process.env.API_URL ?? '').trim()
 const debugApiUrlRaw = rawApiUrl || '(empty)'
 const normalizedApiBase = (rawApiUrl || '').replace(/\/+$/, '').replace(/\/api$/, '')
@@ -151,12 +174,19 @@ function appendQueryParam(url: string, key: string, value: string): string {
 }
 
 const redirectPath = sanitizeRedirectPath(route.query.redirect)
+const routeRedirectRaw =
+  typeof route.query.redirect === 'string' ? route.query.redirect : String(route.query.redirect ?? '(unset)')
+const routeTokenRaw = typeof route.query.token === 'string' ? route.query.token : ''
 const webCallbackUrl =
   redirectPath === '/'
     ? `${window.location.origin}/login`
     : `${window.location.origin}/login?redirect=${encodeURIComponent(redirectPath)}`
+const nativeAppCallbackUrl = appendQueryParam(nativeCallbackUrl, 'redirect', redirectPath)
+const nativeBridgeCallbackUrl = normalizedApiBase
+  ? `${normalizedApiBase}/api/mobile-auth/complete?appCallbackURL=${encodeURIComponent(nativeAppCallbackUrl)}`
+  : ''
 const socialCallbackUrl = isNative
-  ? appendQueryParam(nativeCallbackUrl, 'redirect', redirectPath)
+  ? nativeAppCallbackUrl
   : webCallbackUrl
 
 function buildTestUrls(path: string): string[] {
@@ -210,13 +240,13 @@ async function loginGithub() {
 }
 
 async function startNativeSocialLogin(provider: 'google' | 'github') {
-  if (!nativeOauthStartUrlBase) {
-    throw new Error('Native OAuth requires API_URL to be configured')
+  if (!nativeOauthStartUrlBase || !nativeBridgeCallbackUrl) {
+    throw new Error('Native OAuth requires API_URL to be configured for callback bridging')
   }
 
   const startUrl =
     `${nativeOauthStartUrlBase}?provider=${encodeURIComponent(provider)}` +
-    `&callbackURL=${encodeURIComponent(socialCallbackUrl)}` +
+    `&callbackURL=${encodeURIComponent(nativeBridgeCallbackUrl)}` +
     `&errorCallbackURL=${encodeURIComponent(socialCallbackUrl)}`
 
   const popup = window.open(startUrl, '_blank', 'noopener,noreferrer')
@@ -239,10 +269,18 @@ async function runEndpointTest(label: string, path: string) {
       })
       const text = await res.text()
       const preview = text.length > 500 ? `${text.slice(0, 500)}...` : text
+      const acao = res.headers.get('access-control-allow-origin') ?? '(none)'
+      const acac = res.headers.get('access-control-allow-credentials') ?? '(none)'
+      const aceh = res.headers.get('access-control-expose-headers') ?? '(none)'
+      const setAuthToken = res.headers.get('set-auth-token') ? 'present' : 'absent'
       debugOutput.value =
         `[${label}] OK\n` +
         `url=${url}\n` +
         `status=${res.status} ${res.statusText}\n` +
+        `acao=${acao}\n` +
+        `acac=${acac}\n` +
+        `aceh=${aceh}\n` +
+        `set_auth_token=${setAuthToken}\n` +
         `duration_ms=${Date.now() - started}\n` +
         `body=${preview || '(empty)'}`
       return
@@ -277,6 +315,74 @@ async function testBandsEndpoint() {
     testingBands.value = false
   }
 }
+
+async function probeSessionAndCors() {
+  testingSession.value = true
+  const started = Date.now()
+  try {
+    const lines: string[] = []
+    lines.push('[Session Probe]')
+    lines.push(`window_origin=${window.location.origin}`)
+    lines.push(`window_href=${window.location.href}`)
+    lines.push(`route_redirect_raw=${routeRedirectRaw}`)
+    lines.push(`redirect_path=${redirectPath}`)
+    lines.push(`social_callback=${socialCallbackUrl}`)
+
+    try {
+      const result = await authClient.getSession()
+      lines.push(`authClient.getSession.error=${result.error ? (result.error.message ?? 'unknown') : '(none)'}`)
+      lines.push(`authClient.getSession.has_user=${result.data?.user ? 'yes' : 'no'}`)
+      lines.push(`authClient.getSession.has_session=${result.data?.session ? 'yes' : 'no'}`)
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e)
+      lines.push(`authClient.getSession.throw=${message}`)
+    }
+
+    const urls = buildTestUrls('/auth/get-session')
+    for (const url of urls) {
+      try {
+        const res = await fetch(url, {
+          method: 'GET',
+          credentials: 'include',
+          headers: { Accept: 'application/json' },
+        })
+        const text = await res.text()
+        const preview = text.length > 220 ? `${text.slice(0, 220)}...` : text
+        lines.push(`raw_get_session.url=${url}`)
+        lines.push(`raw_get_session.status=${res.status}`)
+        lines.push(`raw_get_session.acao=${res.headers.get('access-control-allow-origin') ?? '(none)'}`)
+        lines.push(`raw_get_session.acac=${res.headers.get('access-control-allow-credentials') ?? '(none)'}`)
+        lines.push(`raw_get_session.aceh=${res.headers.get('access-control-expose-headers') ?? '(none)'}`)
+        lines.push(`raw_get_session.set_auth_token=${res.headers.get('set-auth-token') ? 'present' : 'absent'}`)
+        lines.push(`raw_get_session.body=${preview || '(empty)'}`)
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : String(e)
+        lines.push(`raw_get_session.url=${url}`)
+        lines.push(`raw_get_session.error=${message}`)
+      }
+    }
+
+    lines.push(`duration_ms=${Date.now() - started}`)
+    debugOutput.value = lines.join('\n')
+  } finally {
+    testingSession.value = false
+  }
+}
+
+onMounted(async () => {
+  if (!routeTokenRaw) return
+
+  authStore.setToken(routeTokenRaw)
+  await authStore.loadSession()
+
+  const query = { ...route.query }
+  delete query.token
+  await router.replace({ path: '/login', query })
+
+  if (authStore.isAuthenticated) {
+    await router.replace({ path: redirectPath })
+  }
+})
 </script>
 
 <style scoped>

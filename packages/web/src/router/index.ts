@@ -3,6 +3,22 @@ import { createRouter, createMemoryHistory, createWebHistory, createWebHashHisto
 import { useAuthStore } from '../stores/auth'
 import routes from './routes'
 
+function delay(ms: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms))
+}
+
+function isNativeLikeRuntime() {
+  const w = window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }
+  try {
+    if (typeof w.Capacitor?.isNativePlatform === 'function') {
+      return w.Capacitor.isNativePlatform()
+    }
+  } catch {
+    // Ignore runtime bridge issues and fall back to origin heuristic.
+  }
+  return window.location.origin === 'https://localhost'
+}
+
 export default route(function (/* { store, ssrContext } */) {
   const createHistory = process.env.SERVER
     ? createMemoryHistory
@@ -82,6 +98,13 @@ export default route(function (/* { store, ssrContext } */) {
     if (to.path === '/login') {
       if (!auth.isAuthenticated) {
         await auth.loadSession()
+        // On mobile, cookie propagation from browser -> WebView can lag briefly.
+        if (!auth.isAuthenticated && isNativeLikeRuntime()) {
+          for (let attempt = 0; attempt < 6 && !auth.isAuthenticated; attempt += 1) {
+            await delay(300)
+            await auth.loadSession()
+          }
+        }
       }
       if (auth.isAuthenticated) {
         const redirectTarget = typeof to.query.redirect === 'string' ? to.query.redirect : '/'

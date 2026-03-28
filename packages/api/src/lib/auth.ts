@@ -1,6 +1,6 @@
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
-import { organization } from 'better-auth/plugins'
+import { bearer, organization } from 'better-auth/plugins'
 import { db } from '../db/index.js'
 import * as schema from '../db/schema.js'
 
@@ -19,6 +19,7 @@ function normalizeAuthBaseUrl(apiUrl: string): string {
 const configuredApiUrl = process.env.API_URL ?? 'http://localhost:3001'
 const authBaseUrl = normalizeAuthBaseUrl(configuredApiUrl)
 export const AUTH_BASE_PATH = '/api/auth'
+const isProduction = (process.env.NODE_ENV ?? '').toLowerCase() === 'production'
 const MOBILE_LOCAL_ORIGINS = [
   'capacitor://localhost',
   'http://localhost',
@@ -67,6 +68,7 @@ export const auth = betterAuth({
   },
 
   plugins: [
+    bearer(),
     organization({
       // Organizations = Bands in our domain
       // Better Auth manages org membership; we sync to band_members for app-level data
@@ -87,8 +89,12 @@ export const auth = betterAuth({
   },
 
   advanced: {
+    // Native app origin (https://localhost) talks to remote API origin, so
+    // session cookies must be allowed in cross-site requests in production.
+    defaultCookieAttributes: isProduction ? { sameSite: 'none' } : undefined,
+    useSecureCookies: isProduction,
     crossSubDomainCookies: {
-      enabled: process.env.NODE_ENV === 'production',
+      enabled: isProduction,
     },
   },
 })
