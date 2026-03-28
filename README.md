@@ -43,6 +43,7 @@ Database helpers:
 ```bash
 pnpm db:generate
 pnpm db:migrate
+pnpm db:migrate:runtime
 pnpm db:seed
 pnpm db:studio
 ```
@@ -55,10 +56,10 @@ Docker compose files are available for containerized workflows:
 
 ## Verify Remote Containers (curl)
 
-Use these checks against your deployed domain to confirm the web and API containers are up:
+Run these from your laptop or VPS host shell (not from inside the `api` container) to confirm the web and API containers are up:
 
 ```bash
-DOMAIN="http://localhost:3001"
+DOMAIN="https://your-domain.tld"
 #DOMAIN="https://bndstr.trmusic.de"
 
 
@@ -79,6 +80,52 @@ curl -o /dev/null -s -w "health: %{http_code}\n" "$DOMAIN/health"
 curl -o /dev/null -s -w "api: %{http_code}\n" "$DOMAIN/api/auth/get-session"
 curl -o /dev/null -s -w "web: %{http_code}\n" "$DOMAIN/"
 ```
+
+If you are already inside the `api` container, only `localhost:3001` is valid there:
+
+```bash
+curl -fsS "http://localhost:3001/health"
+curl -fsS "http://localhost:3001/api/auth/get-session"
+```
+
+## Production DB Migrations
+
+Always apply migrations after deployment and before testing login.
+
+From the VPS host (recommended):
+
+```bash
+APP_CONTAINER="<your-app-container>"
+docker exec -it "$APP_CONTAINER" sh -lc 'node /app/packages/api/dist/db/migrate.js'
+```
+
+From inside the app container:
+
+```bash
+node /app/packages/api/dist/db/migrate.js
+```
+
+Verify migration files exist in the running container:
+
+```bash
+docker exec -it "$APP_CONTAINER" sh -lc 'ls -la /app/packages/api/dist/db/migrations'
+```
+
+If login loops back to `/login`, check API logs for `/api/bands 500` and SQL errors first.
+
+## In-Container Shell Notes
+
+When you open an interactive shell in app containers, notes with useful commands are shown automatically:
+
+```bash
+docker exec -it <app-container> sh
+```
+
+Included commands cover:
+- API health/session checks
+- DB migration: `node /app/packages/api/dist/db/migrate.js`
+- DB seed: `node /app/packages/api/dist/db/seed.js`
+- Migration file presence check
 
 ## Repository Structure
 

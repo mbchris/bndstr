@@ -66,6 +66,10 @@ RUN sed -i 's|http://api:3001|http://127.0.0.1:3001|g' /etc/nginx/conf.d/bndstr.
 ENV HOST=0.0.0.0
 ENV PORT=3001
 ENV NODE_ENV=production
+ENV ENV=/etc/bndstr_shell_rc
+
+# Interactive shell notes (shown on docker exec -it <container> sh)
+COPY scripts/container-shell-notes.sh /etc/bndstr_shell_rc
 
 EXPOSE 80
 
