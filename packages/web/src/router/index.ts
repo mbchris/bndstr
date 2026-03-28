@@ -76,9 +76,17 @@ export default route(function (/* { store, ssrContext } */) {
       return { path: '/dashboard' }
     }
 
-    // Redirect already-authenticated users away from /login
-    if (to.path === '/login' && auth.isAuthenticated) {
-      return { path: '/' }
+    // Redirect already-authenticated users away from /login.
+    // For OAuth deep-link returns we may not have in-memory auth state yet,
+    // so hydrate session once before deciding.
+    if (to.path === '/login') {
+      if (!auth.isAuthenticated) {
+        await auth.loadSession()
+      }
+      if (auth.isAuthenticated) {
+        const redirectTarget = typeof to.query.redirect === 'string' ? to.query.redirect : '/'
+        return { path: redirectTarget }
+      }
     }
   })
 
