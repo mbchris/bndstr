@@ -17,6 +17,7 @@ export default configure(function (/* ctx */) {
   const rawApiUrl = (process.env.API_URL || '').trim()
   const debugMode = (process.env.DEBUG_MODE || '').trim().toLowerCase() === 'true'
   const gitRev = readGitRev()
+  const mobileCallbackUrl = (process.env.MOBILE_CALLBACK_URL || '').trim() || 'org.capacitor.bndstr://localhost/login'
   const apiTarget =
     process.env.API_TARGET ||
     (rawApiUrl.startsWith('http://') || rawApiUrl.startsWith('https://')
@@ -46,6 +47,7 @@ export default configure(function (/* ctx */) {
         API_URL: apiUrl,
         DEBUG_MODE: String(debugMode),
         GIT_REV: gitRev,
+        MOBILE_CALLBACK_URL: mobileCallbackUrl,
       },
     },
 

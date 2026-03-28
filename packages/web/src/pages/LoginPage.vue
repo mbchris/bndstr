@@ -32,6 +32,7 @@
       <div>API_URL (raw): {{ debugApiUrlRaw }}</div>
       <div>API base (effective): {{ debugApiBase }}</div>
       <div>Auth URL (effective): {{ debugAuthUrl }}</div>
+      <div>Social callback (effective): {{ socialCallbackUrl }}</div>
     </div>
 
     <div v-if="isDebugMode" class="q-mt-md row q-col-gutter-sm">
@@ -82,7 +83,8 @@ const debugApiUrlRaw = rawApiUrl || '(empty)'
 const normalizedApiBase = (rawApiUrl || '').replace(/\/+$/, '').replace(/\/api$/, '')
 const debugApiBase = normalizedApiBase || '(same-origin /api)'
 const debugAuthUrl = normalizedApiBase ? `${normalizedApiBase}/api/auth` : '/api/auth'
-const nativeCallbackUrl = 'org.capacitor.bndstr://localhost/login'
+const nativeCallbackUrl =
+  (process.env.MOBILE_CALLBACK_URL ?? '').trim() || 'org.capacitor.bndstr://localhost/login'
 const socialCallbackUrl = Capacitor.isNativePlatform() ? nativeCallbackUrl : `${window.location.origin}/`
 
 function buildTestUrls(path: string): string[] {
