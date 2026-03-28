@@ -2,6 +2,8 @@
 
 interface ImportMetaEnv {
   readonly API_URL?: string
+  readonly DEBUG_MODE?: string
+  readonly GIT_REV?: string
 }
 
 interface ImportMeta {

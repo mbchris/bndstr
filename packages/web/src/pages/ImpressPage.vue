@@ -4,12 +4,14 @@
       <div class="impress-card">
         <Markdown :content="impressMarkdown" />
       </div>
+      <div class="impress-rev q-mt-md text-caption text-grey-5">Build: {{ gitRev }}</div>
     </div>
   </q-page>
 </template>
 
 <script setup lang="ts">
 import Markdown from '../components/Markdown.vue'
+const gitRev = (process.env.GIT_REV ?? 'unknown').trim() || 'unknown'
 
 const impressMarkdown = `# Impress
 
@@ -69,5 +71,9 @@ Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer 
   border: 1px solid rgba(148, 163, 184, 0.28);
   border-radius: 12px;
   padding: 24px;
+}
+
+.impress-rev {
+  text-align: right;
 }
 </style>

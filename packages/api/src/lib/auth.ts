@@ -19,7 +19,12 @@ function normalizeAuthBaseUrl(apiUrl: string): string {
 const configuredApiUrl = process.env.API_URL ?? 'http://localhost:3001'
 const authBaseUrl = normalizeAuthBaseUrl(configuredApiUrl)
 export const AUTH_BASE_PATH = '/api/auth'
-const MOBILE_LOCAL_ORIGINS = ['capacitor://localhost', 'http://localhost', 'https://localhost']
+const MOBILE_LOCAL_ORIGINS = [
+  'capacitor://localhost',
+  'http://localhost',
+  'https://localhost',
+  'org.capacitor.bndstr://localhost',
+]
 
 function getTrustedOrigins(): string[] {
   const configured = (process.env.CORS_ORIGINS ?? 'http://localhost:9000')

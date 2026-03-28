@@ -28,13 +28,13 @@
       {{ error }}
     </div>
 
-    <div class="q-mt-lg text-caption text-grey-5 text-center">
+    <div v-if="isDebugMode" class="q-mt-lg text-caption text-grey-5 text-center">
       <div>API_URL (raw): {{ debugApiUrlRaw }}</div>
       <div>API base (effective): {{ debugApiBase }}</div>
       <div>Auth URL (effective): {{ debugAuthUrl }}</div>
     </div>
 
-    <div class="q-mt-md row q-col-gutter-sm">
+    <div v-if="isDebugMode" class="q-mt-md row q-col-gutter-sm">
       <div class="col-12 col-sm-6">
         <q-btn
           class="full-width"
@@ -59,7 +59,7 @@
       </div>
     </div>
 
-    <div v-if="debugOutput" class="q-mt-md text-caption text-grey-4 debug-output">
+    <div v-if="isDebugMode && debugOutput" class="q-mt-md text-caption text-grey-4 debug-output">
       {{ debugOutput }}
     </div>
   </div>
@@ -67,6 +67,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { Capacitor } from '@capacitor/core'
 import { authClient } from '../boot/auth'
 
 const loadingGoogle = ref(false)
@@ -75,11 +76,14 @@ const error = ref<string | null>(null)
 const testingAuth = ref(false)
 const testingBands = ref(false)
 const debugOutput = ref('')
+const isDebugMode = (process.env.DEBUG_MODE ?? '').toLowerCase() === 'true'
 const rawApiUrl = (process.env.API_URL ?? '').trim()
 const debugApiUrlRaw = rawApiUrl || '(empty)'
 const normalizedApiBase = (rawApiUrl || '').replace(/\/+$/, '').replace(/\/api$/, '')
 const debugApiBase = normalizedApiBase || '(same-origin /api)'
 const debugAuthUrl = normalizedApiBase ? `${normalizedApiBase}/api/auth` : '/api/auth'
+const nativeCallbackUrl = 'org.capacitor.bndstr://localhost/login'
+const socialCallbackUrl = Capacitor.isNativePlatform() ? nativeCallbackUrl : `${window.location.origin}/`
 
 function buildTestUrls(path: string): string[] {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`
@@ -97,7 +101,7 @@ async function loginGoogle() {
   loadingGoogle.value = true
   error.value = null
   try {
-    const result = await authClient.signIn.social({ provider: 'google', callbackURL: window.location.origin + '/' })
+    const result = await authClient.signIn.social({ provider: 'google', callbackURL: socialCallbackUrl })
     if (result?.error) {
       throw new Error(result.error.message || 'Login failed')
     }
@@ -112,7 +116,7 @@ async function loginGithub() {
   loadingGithub.value = true
   error.value = null
   try {
-    const result = await authClient.signIn.social({ provider: 'github', callbackURL: window.location.origin + '/' })
+    const result = await authClient.signIn.social({ provider: 'github', callbackURL: socialCallbackUrl })
     if (result?.error) {
       throw new Error(result.error.message || 'Login failed')
     }
