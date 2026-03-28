@@ -26,7 +26,7 @@
             @click="toggleLocale"
           />
 
-          <q-btn flat round dense icon="account_circle">
+          <q-btn v-if="!isBillingRoute" flat round dense icon="account_circle">
             <q-menu anchor="bottom right" self="top right">
               <q-list style="min-width: 260px">
                 <q-item clickable v-close-popup @click="goDashboard">
@@ -157,7 +157,8 @@ const navLinks = computed(() => {
   return links
 })
 
-const showTopNav = computed(() => route.path !== '/dashboard')
+const isBillingRoute = computed(() => route.path.startsWith('/billing'))
+const showTopNav = computed(() => route.path !== '/dashboard' && !isBillingRoute.value)
 
 function isActiveRoute(path: string) {
   return route.path === path
@@ -238,3 +239,4 @@ async function handleLogout() {
   object-fit: contain;
 }
 </style>
+

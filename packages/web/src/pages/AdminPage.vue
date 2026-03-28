@@ -23,6 +23,7 @@
               flat
               :rows="bandStore.members"
               :columns="columns"
+              :visible-columns="visibleColumns"
               row-key="id"
               :pagination="{ rowsPerPage: 0 }"
               :dense="$q.screen.lt.md"
@@ -234,6 +235,9 @@ const columns: QTableColumn[] = [
   { name: 'actions', label: '', field: 'actions', align: 'right' },
 ]
 
+const visibleColumns = computed(() => (
+  $q.screen.lt.md ? ['name', 'role', 'actions'] : ['name', 'email', 'role', 'isHidden', 'beerCount', 'actions']
+))
 const sysStatus = ref<any>(null)
 const isSubmitting = ref(false)
 const isImporting = ref(false)
@@ -511,3 +515,4 @@ onMounted(() => {
   }
 }
 </style>
+

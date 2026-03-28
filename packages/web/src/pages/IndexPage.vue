@@ -61,7 +61,7 @@
           <q-card-section>
             <div class="row items-center justify-between">
               <div class="text-h6 text-red">
-                <q-icon name="microphone" class="q-mr-xs" />
+                <q-icon name="rocketLaunch" class="q-mr-xs" />
                 {{ t('home.upcomingGigs') }}
               </div>
               <q-btn v-if="isAdmin" flat round dense icon="edit" size="sm" @click="openGigEdit" />

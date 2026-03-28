@@ -213,6 +213,9 @@
                 <q-btn flat round dense icon="qr_code_2" @click="openQr(code.code)">
                   <q-tooltip>Show QR</q-tooltip>
                 </q-btn>
+                <q-btn flat round dense icon="content_copy" @click="copyInviteCode(code.code)">
+                  <q-tooltip>Copy code</q-tooltip>
+                </q-btn>
                 <q-btn
                   flat
                   round
@@ -255,7 +258,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { Notify, useQuasar } from 'quasar'
+import { Notify, copyToClipboard, useQuasar } from 'quasar'
 import { apiJson } from '../boot/api'
 import { useAuthStore, type BandMembership } from '../stores/auth'
 import { useBandStore } from '../stores/band'
@@ -452,9 +455,10 @@ async function openInviteManager(band: BandMembership) {
 async function refreshInviteCodes() {
   if (!inviteBand.value) return
   try {
-    inviteCodes.value = await apiJson<InviteCode[]>(`/bands/${inviteBand.value.id}/invite-codes`, {
+    const codes = await apiJson<InviteCode[]>(`/bands/${inviteBand.value.id}/invite-codes`, {
       headers: bandHeaders(inviteBand.value.id),
     })
+    inviteCodes.value = codes.filter((code) => !code.invalidatedAt)
   } catch (error) {
     Notify.create({
       type: 'negative',
@@ -489,6 +493,14 @@ function openQr(code: string) {
   showQrDialog.value = true
 }
 
+async function copyInviteCode(code: string) {
+  try {
+    await copyToClipboard(code)
+    Notify.create({ type: 'positive', message: 'Invitation code copied' })
+  } catch {
+    Notify.create({ type: 'negative', message: 'Failed to copy invitation code' })
+  }
+}
 function invalidateInviteCode(inviteId: number) {
   if (!inviteBand.value) return
   $q.dialog({
@@ -498,7 +510,7 @@ function invalidateInviteCode(inviteId: number) {
   }).onOk(async () => {
     if (!inviteBand.value) return
     try {
-      const updated = await apiJson<InviteCode>(
+      await apiJson<InviteCode>(
         `/bands/${inviteBand.value.id}/invite-codes/${inviteId}/invalidate`,
         {
           method: 'POST',
@@ -506,7 +518,7 @@ function invalidateInviteCode(inviteId: number) {
         },
       )
       const idx = inviteCodes.value.findIndex((entry) => entry.id === inviteId)
-      if (idx !== -1) inviteCodes.value[idx] = updated
+      if (idx !== -1) inviteCodes.value.splice(idx, 1)
       Notify.create({ type: 'positive', message: 'Invitation code invalidated' })
     } catch (error) {
       Notify.create({
@@ -534,3 +546,4 @@ onMounted(async () => {
   height: auto;
 }
 </style>
+

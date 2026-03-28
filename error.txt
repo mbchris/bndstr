@@ -1,0 +1,55 @@
+Warning: .env.local not found. Falling back to .env
+Using environment configuration: .env
+Building production Docker image...
+#1 [internal] load local bake definitions
+#1 reading from stdin 473B 0.1s done
+#1 DONE 0.1s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 2.48kB done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/node:22-alpine
+#3 DONE 0.1s
+
+#4 [internal] load metadata for docker.io/library/nginx:1.27-alpine
+#4 DONE 0.5s
+
+#5 [internal] load .dockerignore
+#5 transferring context: 80B done
+#5 DONE 0.0s
+
+#6 [production  1/11] FROM docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10
+#6 resolve docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10 0.0s done
+#6 DONE 0.0s
+
+#7 [api-deps 1/8] FROM docker.io/library/node:22-alpine@sha256:4d64b49e6c891c8fc821007cb1cdc6c0db7773110ac2c34bf2e6960adef62ed3
+#7 resolve docker.io/library/node:22-alpine@sha256:4d64b49e6c891c8fc821007cb1cdc6c0db7773110ac2c34bf2e6960adef62ed3 0.0s done
+#7 DONE 0.1s
+
+#8 [internal] load build context
+#8 transferring context: 111.06kB 0.3s done
+#8 DONE 0.3s
+
+#9 [api-deps 3/8] RUN corepack enable
+#9 CACHED
+
+#10 [build  5/10] COPY packages/api/package.json packages/api/
+#10 CACHED
+
+#11 [build  7/10] COPY packages/web/package.json packages/web/
+#11 CACHED
+
+#12 [api-deps 2/8] WORKDIR /app
+#12 CACHED
+
+#13 [build  4/10] COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* ./
+#13 CACHED
+
+#14 [build  6/10] COPY packages/shared/package.json packages/shared/
+#14 CACHED
+
+#15 [build  8/10] RUN NODE_ENV=development pnpm install --frozen-lockfile || pnpm install
+#15 CACHED
+
+#16 [build  9/10] COPY packages/ packages/
