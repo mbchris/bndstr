@@ -51,12 +51,16 @@
     <div v-if="error" class="q-mt-md text-negative text-center text-body2">
       {{ error }}
     </div>
+    <div v-if="copyStatus" class="q-mt-sm text-center text-caption">
+      {{ copyStatus }}
+    </div>
 
     <q-dialog v-if="isDebugMode" v-model="showDebugDialog">
       <q-card class="debug-card">
         <q-card-section class="row items-center q-pb-sm">
           <div class="text-subtitle1">Debug Info</div>
           <q-space />
+          <q-btn dense flat icon="content_copy" label="Copy Debug" @click="copyDebugToClipboard" />
           <q-btn dense flat round icon="close" @click="showDebugDialog = false" />
         </q-card-section>
         <q-separator />
@@ -142,6 +146,7 @@ const testingAuth = ref(false)
 const testingBands = ref(false)
 const testingSession = ref(false)
 const debugOutput = ref('')
+const copyStatus = ref('')
 const showDebugDialog = ref(false)
 const isDebugMode = (process.env.DEBUG_MODE ?? '').toLowerCase() === 'true'
 const debugModeRaw = process.env.DEBUG_MODE ?? '(unset)'
@@ -196,14 +201,42 @@ function appendQueryParam(url: string, key: string, value: string): string {
   return `${url}${joiner}${encodeURIComponent(key)}=${encodeURIComponent(value)}`
 }
 
-const redirectPath = sanitizeRedirectPath(route.query.redirect)
+function getParamFromCurrentHref(key: string): string {
+  try {
+    const current = new URL(window.location.href)
+    const direct = current.searchParams.get(key)
+    if (direct) return direct
+
+    const hash = current.hash.startsWith('#') ? current.hash.slice(1) : current.hash
+    const queryIndex = hash.indexOf('?')
+    if (queryIndex >= 0) {
+      const query = hash.slice(queryIndex + 1)
+      const hashParams = new URLSearchParams(query)
+      const value = hashParams.get(key)
+      if (value) return value
+    }
+  } catch {
+    // Ignore malformed URL and fallback to empty value.
+  }
+
+  return ''
+}
+
+const fallbackRedirectRaw = getParamFromCurrentHref('redirect')
+const redirectPath = sanitizeRedirectPath(route.query.redirect || fallbackRedirectRaw)
 const routeRedirectRaw =
-  typeof route.query.redirect === 'string' ? route.query.redirect : String(route.query.redirect ?? '(unset)')
-const routeTokenRaw = typeof route.query.token === 'string' ? route.query.token : ''
+  typeof route.query.redirect === 'string'
+    ? route.query.redirect
+    : (fallbackRedirectRaw || String(route.query.redirect ?? '(unset)'))
+const routeTokenRaw = (typeof route.query.token === 'string' ? route.query.token : '') || getParamFromCurrentHref('token')
 const routeMobileAuthRaw =
-  typeof route.query.mobileAuth === 'string' ? route.query.mobileAuth : String(route.query.mobileAuth ?? '(unset)')
+  (typeof route.query.mobileAuth === 'string' ? route.query.mobileAuth : '') ||
+  getParamFromCurrentHref('mobileAuth') ||
+  String(route.query.mobileAuth ?? '(unset)')
 const routeErrorRaw =
-  typeof route.query.error === 'string' ? route.query.error : String(route.query.error ?? '(unset)')
+  (typeof route.query.error === 'string' ? route.query.error : '') ||
+  getParamFromCurrentHref('error') ||
+  String(route.query.error ?? '(unset)')
 const webCallbackUrl =
   redirectPath === '/'
     ? `${window.location.origin}/login`
@@ -394,6 +427,45 @@ async function probeSessionAndCors() {
   } finally {
     testingSession.value = false
   }
+}
+
+async function copyDebugToClipboard() {
+  const payload = [
+    'Debug Info',
+    `DEBUG_MODE=${debugModeRaw}`,
+    `Native platform=${isNative}`,
+    `Platform=${platform}`,
+    `Window origin=${windowOrigin}`,
+    `Window href=${windowHref}`,
+    `Route redirect=${routeRedirectRaw}`,
+    `Route token=${routeTokenRaw ? '(present)' : '(absent)'}`,
+    `Route mobileAuth=${routeMobileAuthRaw}`,
+    `Route error=${routeErrorRaw}`,
+    `Redirect path=${redirectPath}`,
+    `API_URL(raw)=${debugApiUrlRaw}`,
+    `API base=${debugApiBase}`,
+    `Auth URL=${debugAuthUrl}`,
+    `MOBILE_CALLBACK_URL(raw)=${debugMobileCallbackUrlRaw}`,
+    `Native app callback=${nativeAppCallbackUrl}`,
+    `Native bridge callback=${nativeBridgeCallbackUrl || '(missing API_URL)'}`,
+    `Web callback=${webCallbackUrl}`,
+    `Social callback=${socialCallbackUrl}`,
+    `User agent=${userAgent}`,
+    '',
+    'Debug Output',
+    debugOutput.value || '(empty)',
+  ].join('\n')
+
+  try {
+    await navigator.clipboard.writeText(payload)
+    copyStatus.value = 'Debug copied to clipboard'
+  } catch {
+    copyStatus.value = 'Clipboard copy failed'
+  }
+
+  window.setTimeout(() => {
+    copyStatus.value = ''
+  }, 2200)
 }
 
 onMounted(async () => {
