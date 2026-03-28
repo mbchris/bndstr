@@ -86,7 +86,7 @@ export default configure(function (/* ctx */) {
       fix: true,
     },
 
-    boot: ['pinia', 'auth', 'api', 'i18n'],
+    boot: ['pinia', 'deeplink', 'auth', 'api', 'i18n'],
 
     css: ['app.scss'],
 
