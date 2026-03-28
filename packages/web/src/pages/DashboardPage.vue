@@ -127,6 +127,7 @@
               <div>
                 <div class="text-h6">Manage Subscriptions</div>
                 <div class="text-caption text-grey-7">Current plan: {{ activePlanLabel }}</div>
+                <div class="text-caption text-grey-7">Status: {{ activeSubscriptionStatusLabel }}</div>
               </div>
               <q-btn color="primary" round dense icon="payments" @click="router.push('/billing')">
                 <q-tooltip>Open Billing</q-tooltip>
@@ -298,6 +299,14 @@ type InviteCode = {
 }
 
 const activePlanLabel = computed(() => authStore.activeBand?.plan ?? 'free')
+const activeSubscriptionStatusLabel = computed(() => {
+  const status = authStore.activeBand?.subscriptionStatus ?? 'none'
+  if (status === 'active') return 'Active'
+  if (status === 'trialing') return 'Trialing'
+  if (status === 'past_due') return 'Past due'
+  if (status === 'canceled') return 'Canceled'
+  return 'No active subscription'
+})
 const canCreateBand = computed(() => {
   const ownedBands = authStore.bands.filter((band) => band.role === 'owner')
   if (ownedBands.length === 0) return true

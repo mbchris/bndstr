@@ -14,6 +14,10 @@ export type BandMembership = {
   name: string
   slug: string
   plan: string
+  subscriptionStatus?: 'none' | 'active' | 'canceled' | 'past_due' | 'trialing' | null
+  subscriptionInterval?: 'monthly' | 'yearly' | null
+  subscriptionCurrentPeriodEnd?: string | null
+  subscriptionCancelAtPeriodEnd?: boolean
   role: string
   logo?: string | null
 }

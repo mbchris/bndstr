@@ -189,3 +189,15 @@
   - Assignable only by development/admin team
 
 **Backlog:** [`docs/backlog/iter-9-monetization.md`](./backlog/iter-9-monetization.md)
+
+## Iteration 10 - Android app
+
+**Goal:** A native android app is created
+
+- The app is available as an apk
+- the app is ready to be pushed to the GOogle Play Store
+- the subscriptions can be managed using Google Play InApp Payments
+
+**Backlog:** [`docs/backlog/iter-10-android-app.md`](./backlog/iter-10-android-app.md)
+
+

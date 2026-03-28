@@ -11,6 +11,11 @@ import { requireRole } from '../middleware/rbac.js'
 
 export const bands = new Hono<AuthEnv>()
 const INVITE_TTL_DAYS = 30
+const FREE_MEMBER_LIMIT = 5
+
+function normalizePlan(plan: string) {
+  return plan === 'band' ? 'pro' : plan
+}
 
 function inviteActiveThreshold() {
   const threshold = new Date()
@@ -33,12 +38,16 @@ bands.get('/', requireAuth, async (c) => {
       slug: bandsTable.slug,
       plan: bandsTable.plan,
       logo: bandsTable.logo,
+      subscriptionStatus: bandsTable.subscriptionStatus,
+      subscriptionInterval: bandsTable.subscriptionInterval,
+      subscriptionCurrentPeriodEnd: bandsTable.subscriptionCurrentPeriodEnd,
+      subscriptionCancelAtPeriodEnd: bandsTable.subscriptionCancelAtPeriodEnd,
       role: bandMembers.role,
     })
     .from(bandMembers)
     .innerJoin(bandsTable, eq(bandsTable.id, bandMembers.bandId))
     .where(eq(bandMembers.userId, userId))
-  return c.json(rows)
+  return c.json(rows.map((row) => ({ ...row, plan: normalizePlan(row.plan) })))
 })
 
 // Create a new band
@@ -115,7 +124,7 @@ bands.get('/:id', requireAuth, requireTenant, async (c) => {
   const bandId = c.get('bandId')
   const [band] = await db.select().from(bandsTable).where(eq(bandsTable.id, bandId)).limit(1)
   if (!band) return c.json({ error: 'Not found' }, 404)
-  return c.json(band)
+  return c.json({ ...band, plan: normalizePlan(band.plan) })
 })
 
 // Update band (admin+)
@@ -308,6 +317,28 @@ bands.post('/join', requireAuth, zValidator('json', joinBandSchema), async (c) =
 
   if (existing) return c.json({ error: 'You are already a member of this band' }, 409)
 
+  const [targetBand] = await db
+    .select({ plan: bandsTable.plan })
+    .from(bandsTable)
+    .where(eq(bandsTable.id, invite.bandId))
+    .limit(1)
+
+  if (!targetBand) return c.json({ error: 'Band not found' }, 404)
+
+  const isFreePlan = normalizePlan(targetBand.plan) === 'free'
+  if (isFreePlan) {
+    const members = await db
+      .select({ userId: bandMembers.userId })
+      .from(bandMembers)
+      .where(eq(bandMembers.bandId, invite.bandId))
+    if (members.length >= FREE_MEMBER_LIMIT) {
+      return c.json(
+        { error: 'Free plan allows up to 5 members. Upgrade to pro to add more members.' },
+        403,
+      )
+    }
+  }
+
   const result = await db.transaction(async (tx) => {
     const [consumed] = await tx
       .update(bandInviteCodes)
@@ -336,7 +367,7 @@ bands.post('/join', requireAuth, zValidator('json', joinBandSchema), async (c) =
       id: band.id,
       name: band.name,
       slug: band.slug,
-      plan: band.plan,
+      plan: normalizePlan(band.plan),
       logo: band.logo,
       role: 'member',
     }

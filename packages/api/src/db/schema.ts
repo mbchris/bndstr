@@ -16,9 +16,14 @@ export const bands = pgTable('bands', {
   id: serial('id').primaryKey(),
   name: text('name').notNull(),
   slug: text('slug').notNull().unique(),
-  plan: text('plan').notNull().default('free'), // 'free' | 'band' | 'pro'
+  plan: text('plan').notNull().default('free'), // 'free' | 'pro' | 'pro-zero'
   logo: text('logo'),
   stripeCustomerId: text('stripe_customer_id'),
+  stripeSubscriptionId: text('stripe_subscription_id'),
+  subscriptionStatus: text('subscription_status').notNull().default('none'), // 'none' | 'active' | 'canceled' | 'past_due' | 'trialing'
+  subscriptionInterval: text('subscription_interval'), // 'monthly' | 'yearly'
+  subscriptionCurrentPeriodEnd: timestamp('subscription_current_period_end'),
+  subscriptionCancelAtPeriodEnd: boolean('subscription_cancel_at_period_end').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 

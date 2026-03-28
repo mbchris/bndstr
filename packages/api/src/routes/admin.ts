@@ -12,6 +12,28 @@ export const admin = new Hono<TenantEnv>()
 
 admin.use('*', requireAuth, requireTenant, requireRole('admin'))
 
+function normalizePlan(plan: string) {
+  return plan === 'band' ? 'pro' : plan
+}
+
+function isProPlan(plan: string) {
+  const normalized = normalizePlan(plan)
+  return normalized === 'pro' || normalized === 'pro-zero'
+}
+
+async function ensureProBandOrThrow(bandId: number) {
+  const [band] = await db.select({ plan: bands.plan }).from(bands).where(eq(bands.id, bandId)).limit(1)
+  if (!band) return { ok: false as const, status: 404, message: 'Band not found' }
+  if (!isProPlan(band.plan)) {
+    return {
+      ok: false as const,
+      status: 403,
+      message: 'Import/export features are available on pro plans only.',
+    }
+  }
+  return { ok: true as const }
+}
+
 // GET /admin/status
 admin.get('/status', async (c) => {
   return c.json({
@@ -28,6 +50,8 @@ admin.get('/status', async (c) => {
 // GET /admin/db/export — export band data as JSON
 admin.get('/db/export', async (c) => {
   const bandId = c.get('bandId')
+  const entitlement = await ensureProBandOrThrow(bandId)
+  if (!entitlement.ok) return c.json({ error: entitlement.message }, entitlement.status as 403 | 404)
 
   const [bandData, members, songsData, votesData, events] = await Promise.all([
     db.select().from(bands).where(eq(bands.id, bandId)).limit(1),
@@ -104,6 +128,8 @@ admin.delete('/logo', async (c) => {
 // GET /admin/calendar/export — export only calendar events as JSON
 admin.get('/calendar/export', async (c) => {
   const bandId = c.get('bandId')
+  const entitlement = await ensureProBandOrThrow(bandId)
+  if (!entitlement.ok) return c.json({ error: entitlement.message }, entitlement.status as 403 | 404)
   const events = await db.select().from(calendarEvents).where(eq(calendarEvents.bandId, bandId))
 
   c.header('Content-Type', 'application/json; charset=utf-8')

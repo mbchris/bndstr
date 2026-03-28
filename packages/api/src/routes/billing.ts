@@ -12,35 +12,57 @@ import { requireRole } from '../middleware/rbac.js'
 
 export const billing = new Hono<TenantEnv>()
 
-type PlanId = 'free' | 'band' | 'pro'
+type PlanId = 'free' | 'pro' | 'pro-zero'
+type BillingInterval = 'monthly' | 'yearly'
+type SubscriptionStatus = 'none' | 'active' | 'canceled' | 'past_due' | 'trialing'
 
 const PLANS: Array<{
   id: PlanId
   name: string
-  price: number
-  currency: string
-  limits: { bands: number | null; songs: number | null; members: number | null }
+  bookable: boolean
+  prices: { monthly: number | null; yearly: number | null; currency: string }
+  limits: { setlistSongs: number | null; members: number | null }
+  features: string[]
 }> = [
   {
     id: 'free',
-    name: 'Free',
-    price: 0,
-    currency: 'EUR',
-    limits: { bands: 1, songs: 20, members: 5 },
-  },
-  {
-    id: 'band',
-    name: 'Band',
-    price: 5,
-    currency: 'EUR',
-    limits: { bands: 1, songs: null, members: 10 },
+    name: 'bndstr free',
+    bookable: true,
+    prices: { monthly: 0, yearly: 0, currency: 'EUR' },
+    limits: { setlistSongs: 15, members: 5 },
+    features: [
+      'Song voting',
+      'Setlist management (up to 15 songs)',
+      'Gig setlist management',
+      'Bierwart',
+      'Calendar',
+      'Band member availabilities',
+    ],
   },
   {
     id: 'pro',
-    name: 'Pro',
-    price: 12,
-    currency: 'EUR',
-    limits: { bands: 3, songs: null, members: null },
+    name: 'bndstr pro',
+    bookable: true,
+    prices: { monthly: 2.99, yearly: 29, currency: 'EUR' },
+    limits: { setlistSongs: null, members: null },
+    features: [
+      'Unlimited setlist size',
+      'Unlimited band members',
+      'Shared notes on songs',
+      'Personal song notes',
+      'Import/export for band data',
+    ],
+  },
+  {
+    id: 'pro-zero',
+    name: 'bndstr pro-zero',
+    bookable: false,
+    prices: { monthly: 0, yearly: 0, currency: 'EUR' },
+    limits: { setlistSongs: null, members: null },
+    features: [
+      'All pro features',
+      'Internal-only plan',
+    ],
   },
 ]
 
@@ -71,21 +93,75 @@ function appUrlFromRequest(c: Context) {
   return 'http://localhost:9000'
 }
 
-function envPriceIdForPlan(plan: Exclude<PlanId, 'free'>) {
-  return plan === 'band' ? process.env.STRIPE_PRICE_BAND : process.env.STRIPE_PRICE_PRO
-}
-
-function planFromPriceId(priceId?: string | null): PlanId {
-  if (!priceId) return 'free'
-  if (process.env.STRIPE_PRICE_BAND && priceId === process.env.STRIPE_PRICE_BAND) return 'band'
-  if (process.env.STRIPE_PRICE_PRO && priceId === process.env.STRIPE_PRICE_PRO) return 'pro'
+function normalizePlan(plan: string): PlanId {
+  if (plan === 'band') return 'pro'
+  if (plan === 'pro' || plan === 'pro-zero') return plan
   return 'free'
 }
 
-async function updateBandPlanByCustomer(customerId: string, plan: PlanId) {
+function envPriceIdForPro(interval: BillingInterval) {
+  if (interval === 'yearly') return process.env.STRIPE_PRICE_PRO_YEARLY
+  return process.env.STRIPE_PRICE_PRO_MONTHLY ?? process.env.STRIPE_PRICE_PRO
+}
+
+function googlePlayProductIdForPro(interval: BillingInterval) {
+  if (interval === 'yearly') return process.env.GPLAY_PRODUCT_PRO_YEARLY
+  return process.env.GPLAY_PRODUCT_PRO_MONTHLY
+}
+
+function billingIntervalFromPrice(price?: Stripe.Price): BillingInterval | null {
+  const recurring = price?.recurring?.interval
+  if (recurring === 'year') return 'yearly'
+  if (recurring === 'month') return 'monthly'
+  return null
+}
+
+function planFromPriceId(priceId?: string | null): { plan: PlanId; interval: BillingInterval | null } {
+  if (!priceId) return { plan: 'free', interval: null }
+  if (process.env.STRIPE_PRICE_PRO_YEARLY && priceId === process.env.STRIPE_PRICE_PRO_YEARLY) {
+    return { plan: 'pro', interval: 'yearly' }
+  }
+  if (
+    (process.env.STRIPE_PRICE_PRO_MONTHLY && priceId === process.env.STRIPE_PRICE_PRO_MONTHLY) ||
+    (process.env.STRIPE_PRICE_PRO && priceId === process.env.STRIPE_PRICE_PRO)
+  ) {
+    return { plan: 'pro', interval: 'monthly' }
+  }
+  return { plan: 'free', interval: null }
+}
+
+function normalizeSubscriptionStatus(status?: string | null): SubscriptionStatus {
+  if (status === 'active') return 'active'
+  if (status === 'trialing') return 'trialing'
+  if (status === 'past_due') return 'past_due'
+  if (status === 'canceled' || status === 'unpaid' || status === 'incomplete_expired') return 'canceled'
+  return 'none'
+}
+
+async function updateBandSubscriptionByCustomer(
+  customerId: string,
+  payload: {
+    plan: PlanId
+    status: SubscriptionStatus
+    interval: BillingInterval | null
+    currentPeriodEnd: Date | null
+    stripeSubscriptionId: string | null
+    cancelAtPeriodEnd: boolean
+  },
+) {
   const [band] = await db.select({ id: bands.id }).from(bands).where(eq(bands.stripeCustomerId, customerId)).limit(1)
   if (!band) return
-  await db.update(bands).set({ plan }).where(eq(bands.id, band.id))
+  await db
+    .update(bands)
+    .set({
+      plan: payload.plan,
+      subscriptionStatus: payload.status,
+      subscriptionInterval: payload.interval,
+      subscriptionCurrentPeriodEnd: payload.currentPeriodEnd,
+      stripeSubscriptionId: payload.stripeSubscriptionId,
+      subscriptionCancelAtPeriodEnd: payload.cancelAtPeriodEnd,
+    })
+    .where(eq(bands.id, band.id))
 }
 
 billing.get('/plans', requireAuth, requireTenant, async (c) => {
@@ -94,28 +170,84 @@ billing.get('/plans', requireAuth, requireTenant, async (c) => {
   if (!band) return c.json({ error: 'Band not found' }, 404)
 
   return c.json({
-    currentPlan: band.plan,
+    currentPlan: normalizePlan(band.plan),
+    currentSubscription: {
+      status: normalizeSubscriptionStatus(band.subscriptionStatus),
+      interval: (band.subscriptionInterval as BillingInterval | null) ?? null,
+      currentPeriodEnd: band.subscriptionCurrentPeriodEnd,
+      cancelAtPeriodEnd: band.subscriptionCancelAtPeriodEnd,
+    },
+    android: {
+      packageName: process.env.GPLAY_PACKAGE_NAME ?? null,
+      proProducts: {
+        monthly: googlePlayProductIdForPro('monthly') ?? null,
+        yearly: googlePlayProductIdForPro('yearly') ?? null,
+      },
+    },
     plans: PLANS,
   })
 })
+
+billing.post(
+  '/google-play/activate',
+  requireAuth,
+  requireTenant,
+  requireRole('owner'),
+  zValidator(
+    'json',
+    z.object({
+      productId: z.string().min(1),
+      purchaseToken: z.string().min(1),
+      orderId: z.string().optional(),
+      interval: z.enum(['monthly', 'yearly']).optional(),
+    }),
+  ),
+  async (c) => {
+    const bandId = c.get('bandId')
+    const { productId, purchaseToken, interval } = c.req.valid('json')
+    const [band] = await db.select().from(bands).where(eq(bands.id, bandId)).limit(1)
+    if (!band) return c.json({ error: 'Band not found' }, 404)
+
+    const resolvedInterval: BillingInterval =
+      interval ??
+      (productId === googlePlayProductIdForPro('yearly') ? 'yearly' : 'monthly')
+
+    const periodEnd = new Date()
+    periodEnd.setMonth(periodEnd.getMonth() + (resolvedInterval === 'yearly' ? 12 : 1))
+
+    await db
+      .update(bands)
+      .set({
+        plan: 'pro',
+        subscriptionStatus: 'active',
+        subscriptionInterval: resolvedInterval,
+        subscriptionCurrentPeriodEnd: periodEnd,
+        stripeSubscriptionId: `gplay:${productId}:${purchaseToken.slice(0, 32)}`,
+        subscriptionCancelAtPeriodEnd: false,
+      })
+      .where(eq(bands.id, band.id))
+
+    return c.json({ ok: true })
+  },
+)
 
 billing.post(
   '/checkout',
   requireAuth,
   requireTenant,
   requireRole('owner'),
-  zValidator('json', z.object({ plan: z.enum(['band', 'pro']) })),
+  zValidator('json', z.object({ plan: z.literal('pro'), interval: z.enum(['monthly', 'yearly']) })),
   async (c) => {
     try {
       const stripe = getStripe()
       const bandId = c.get('bandId')
-      const { plan } = c.req.valid('json')
+      const { plan, interval } = c.req.valid('json')
       const [band] = await db.select().from(bands).where(eq(bands.id, bandId)).limit(1)
       if (!band) return c.json({ error: 'Band not found' }, 404)
 
-      const priceId = envPriceIdForPlan(plan)
+      const priceId = envPriceIdForPro(interval)
       if (!priceId) {
-        return c.json({ error: `Missing Stripe price configuration for plan "${plan}"` }, 500)
+        return c.json({ error: `Missing Stripe price configuration for plan "${plan}" (${interval})` }, 500)
       }
 
       let customerId = band.stripeCustomerId
@@ -138,6 +270,7 @@ billing.post(
         metadata: {
           bandId: String(band.id),
           plan,
+          interval,
         },
       })
 
@@ -170,6 +303,35 @@ billing.get('/portal', requireAuth, requireTenant, requireRole('owner'), async (
   }
 })
 
+billing.post(
+  '/internal/assign-pro-zero',
+  zValidator('json', z.object({ bandId: z.number().int().positive() })),
+  async (c) => {
+    const token = c.req.header('x-internal-admin-token')
+    if (!token || token !== process.env.INTERNAL_ADMIN_TOKEN) {
+      return c.json({ error: 'Forbidden' }, 403)
+    }
+
+    const { bandId } = c.req.valid('json')
+    const [band] = await db.select().from(bands).where(eq(bands.id, bandId)).limit(1)
+    if (!band) return c.json({ error: 'Band not found' }, 404)
+
+    await db
+      .update(bands)
+      .set({
+        plan: 'pro-zero',
+        subscriptionStatus: 'active',
+        subscriptionInterval: null,
+        subscriptionCurrentPeriodEnd: null,
+        stripeSubscriptionId: null,
+        subscriptionCancelAtPeriodEnd: false,
+      })
+      .where(eq(bands.id, bandId))
+
+    return c.json({ ok: true })
+  },
+)
+
 billing.post('/webhook', async (c) => {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
   if (!webhookSecret) {
@@ -196,10 +358,16 @@ billing.post('/webhook', async (c) => {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
         if (typeof session.customer === 'string' && session.mode === 'subscription') {
-          const plan = (session.metadata?.plan as PlanId | undefined) ?? 'free'
-          if (plan === 'band' || plan === 'pro') {
-            await updateBandPlanByCustomer(session.customer, plan)
-          }
+          const plan = normalizePlan((session.metadata?.plan as string | undefined) ?? 'free')
+          const interval = (session.metadata?.interval as BillingInterval | undefined) ?? null
+          await updateBandSubscriptionByCustomer(session.customer, {
+            plan,
+            status: 'active',
+            interval,
+            currentPeriodEnd: null,
+            stripeSubscriptionId: typeof session.subscription === 'string' ? session.subscription : null,
+            cancelAtPeriodEnd: false,
+          })
         }
         break
       }
@@ -208,14 +376,31 @@ billing.post('/webhook', async (c) => {
         const sub = event.data.object as Stripe.Subscription
         if (typeof sub.customer === 'string') {
           const priceId = sub.items.data[0]?.price?.id
-          await updateBandPlanByCustomer(sub.customer, planFromPriceId(priceId))
+          const currentPeriodEndUnix = (sub as { current_period_end?: number }).current_period_end
+          const mapped = planFromPriceId(priceId)
+          await updateBandSubscriptionByCustomer(sub.customer, {
+            plan: mapped.plan,
+            status: normalizeSubscriptionStatus(sub.status),
+            interval: mapped.interval ?? billingIntervalFromPrice(sub.items.data[0]?.price),
+            currentPeriodEnd: currentPeriodEndUnix ? new Date(currentPeriodEndUnix * 1000) : null,
+            stripeSubscriptionId: sub.id,
+            cancelAtPeriodEnd: !!sub.cancel_at_period_end,
+          })
         }
         break
       }
       case 'customer.subscription.deleted': {
         const sub = event.data.object as Stripe.Subscription
         if (typeof sub.customer === 'string') {
-          await updateBandPlanByCustomer(sub.customer, 'free')
+          const currentPeriodEndUnix = (sub as { current_period_end?: number }).current_period_end
+          await updateBandSubscriptionByCustomer(sub.customer, {
+            plan: 'free',
+            status: 'canceled',
+            interval: null,
+            currentPeriodEnd: currentPeriodEndUnix ? new Date(currentPeriodEndUnix * 1000) : null,
+            stripeSubscriptionId: null,
+            cancelAtPeriodEnd: false,
+          })
         }
         break
       }
