@@ -5,9 +5,6 @@
         <Markdown :content="impressMarkdown" />
       </div>
     </div>
-    <div class="impress-footer">
-      <router-link to="/impress" class="impress-link">Impress</router-link>
-    </div>
   </q-page>
 </template>
 
@@ -72,23 +69,5 @@ Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer 
   border: 1px solid rgba(148, 163, 184, 0.28);
   border-radius: 12px;
   padding: 24px;
-}
-
-.impress-footer {
-  min-height: 28px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  border-top: 1px solid rgba(148, 163, 184, 0.2);
-}
-
-.impress-link {
-  font-size: 12px;
-  color: rgba(100, 116, 139, 1);
-  text-decoration: none;
-}
-
-.impress-link:hover {
-  text-decoration: underline;
 }
 </style>

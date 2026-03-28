@@ -27,7 +27,10 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/impress',
-    component: () => import('../pages/ImpressPage.vue'),
+    component: () => import('../layouts/PublicLayout.vue'),
+    children: [
+      { path: '', component: () => import('../pages/ImpressPage.vue') },
+    ],
   },
   {
     path: '/:catchAll(.*)*',
