@@ -111,6 +111,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Capacitor } from '@capacitor/core'
+import { useRoute } from 'vue-router'
 import { authClient } from '../boot/auth'
 
 const loadingGoogle = ref(false)
@@ -124,6 +125,7 @@ const isDebugMode = (process.env.DEBUG_MODE ?? '').toLowerCase() === 'true'
 const debugModeRaw = process.env.DEBUG_MODE ?? '(unset)'
 const isNative = Capacitor.isNativePlatform()
 const platform = Capacitor.getPlatform()
+const route = useRoute()
 const windowOrigin = window.location.origin
 const windowHref = window.location.href
 const rawApiUrl = (process.env.API_URL ?? '').trim()
@@ -134,8 +136,28 @@ const debugAuthUrl = normalizedApiBase ? `${normalizedApiBase}/api/auth` : '/api
 const mobileCallbackUrlRaw = (process.env.MOBILE_CALLBACK_URL ?? '').trim()
 const debugMobileCallbackUrlRaw = mobileCallbackUrlRaw || '(empty)'
 const nativeCallbackUrl = mobileCallbackUrlRaw || 'org.capacitor.bndstr://localhost/login'
-const socialCallbackUrl = isNative ? nativeCallbackUrl : `${window.location.origin}/`
 const nativeOauthStartUrlBase = normalizedApiBase ? `${normalizedApiBase}/api/mobile-auth/start` : ''
+
+function sanitizeRedirectPath(value: unknown): string {
+  if (typeof value !== 'string') return '/'
+  const v = value.trim()
+  if (!v.startsWith('/') || v.startsWith('//')) return '/'
+  return v === '/login' ? '/' : v
+}
+
+function appendQueryParam(url: string, key: string, value: string): string {
+  const joiner = url.includes('?') ? '&' : '?'
+  return `${url}${joiner}${encodeURIComponent(key)}=${encodeURIComponent(value)}`
+}
+
+const redirectPath = sanitizeRedirectPath(route.query.redirect)
+const webCallbackUrl =
+  redirectPath === '/'
+    ? `${window.location.origin}/login`
+    : `${window.location.origin}/login?redirect=${encodeURIComponent(redirectPath)}`
+const socialCallbackUrl = isNative
+  ? appendQueryParam(nativeCallbackUrl, 'redirect', redirectPath)
+  : webCallbackUrl
 
 function buildTestUrls(path: string): string[] {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`
