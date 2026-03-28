@@ -135,6 +135,7 @@ const mobileCallbackUrlRaw = (process.env.MOBILE_CALLBACK_URL ?? '').trim()
 const debugMobileCallbackUrlRaw = mobileCallbackUrlRaw || '(empty)'
 const nativeCallbackUrl = mobileCallbackUrlRaw || 'org.capacitor.bndstr://localhost/login'
 const socialCallbackUrl = isNative ? nativeCallbackUrl : `${window.location.origin}/`
+const nativeOauthStartUrlBase = normalizedApiBase ? `${normalizedApiBase}/api/mobile-auth/start` : ''
 
 function buildTestUrls(path: string): string[] {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`
@@ -152,9 +153,13 @@ async function loginGoogle() {
   loadingGoogle.value = true
   error.value = null
   try {
-    const result = await authClient.signIn.social({ provider: 'google', callbackURL: socialCallbackUrl })
-    if (result?.error) {
-      throw new Error(result.error.message || 'Login failed')
+    if (isNative) {
+      await startNativeSocialLogin('google')
+    } else {
+      const result = await authClient.signIn.social({ provider: 'google', callbackURL: socialCallbackUrl })
+      if (result?.error) {
+        throw new Error(result.error.message || 'Login failed')
+      }
     }
   } catch (e: unknown) {
     error.value = e instanceof Error ? e.message : 'Login failed'
@@ -167,14 +172,34 @@ async function loginGithub() {
   loadingGithub.value = true
   error.value = null
   try {
-    const result = await authClient.signIn.social({ provider: 'github', callbackURL: socialCallbackUrl })
-    if (result?.error) {
-      throw new Error(result.error.message || 'Login failed')
+    if (isNative) {
+      await startNativeSocialLogin('github')
+    } else {
+      const result = await authClient.signIn.social({ provider: 'github', callbackURL: socialCallbackUrl })
+      if (result?.error) {
+        throw new Error(result.error.message || 'Login failed')
+      }
     }
   } catch (e: unknown) {
     error.value = e instanceof Error ? e.message : 'Login failed'
   } finally {
     loadingGithub.value = false
+  }
+}
+
+async function startNativeSocialLogin(provider: 'google' | 'github') {
+  if (!nativeOauthStartUrlBase) {
+    throw new Error('Native OAuth requires API_URL to be configured')
+  }
+
+  const startUrl =
+    `${nativeOauthStartUrlBase}?provider=${encodeURIComponent(provider)}` +
+    `&callbackURL=${encodeURIComponent(socialCallbackUrl)}` +
+    `&errorCallbackURL=${encodeURIComponent(socialCallbackUrl)}`
+
+  const popup = window.open(startUrl, '_blank', 'noopener,noreferrer')
+  if (!popup) {
+    window.location.href = startUrl
   }
 }
 

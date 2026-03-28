@@ -24,6 +24,7 @@ type RequestLike = {
 }
 
 const MOBILE_LOCAL_ORIGINS = ['capacitor://localhost', 'http://localhost', 'https://localhost']
+const SUPPORTED_SOCIAL_PROVIDERS = new Set(['google', 'github'])
 
 function getAllowedOrigins(): string[] {
   const configured = (process.env.CORS_ORIGINS ?? 'http://localhost:9000')
@@ -48,6 +49,15 @@ function cloneRequestWithPath(req: RequestLike, pathname: string): AuthRequest {
   return new Request(url.toString(), init) as AuthRequest
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 // Global middleware
 app.use('*', logger())
 app.use(
@@ -64,6 +74,49 @@ app.use(
 
 // Health check
 app.get('/health', (c) => c.json({ ok: true, version: process.env.GIT_REV ?? 'dev' }))
+
+// Native OAuth bootstrap:
+// Start social sign-in from the system browser context so Better Auth state cookies
+// are created and consumed in the same context (avoids state_mismatch).
+app.get('/api/mobile-auth/start', (c) => {
+  const provider = (c.req.query('provider') ?? '').trim().toLowerCase()
+  if (!SUPPORTED_SOCIAL_PROVIDERS.has(provider)) {
+    return c.text('Unsupported provider', 400)
+  }
+
+  const callbackURL = (c.req.query('callbackURL') ?? '').trim()
+  if (!callbackURL) {
+    return c.text('Missing callbackURL', 400)
+  }
+
+  const errorCallbackURL = (c.req.query('errorCallbackURL') ?? callbackURL).trim()
+  const formAction = `${authCanonical}/sign-in/social`
+
+  const html = `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>bndstr login</title>
+  </head>
+  <body>
+    <form id="oauth-start" method="post" action="${escapeHtml(formAction)}">
+      <input type="hidden" name="provider" value="${escapeHtml(provider)}" />
+      <input type="hidden" name="callbackURL" value="${escapeHtml(callbackURL)}" />
+      <input type="hidden" name="errorCallbackURL" value="${escapeHtml(errorCallbackURL)}" />
+      <input type="hidden" name="disableRedirect" value="false" />
+      <noscript>
+        <button type="submit">Continue</button>
+      </noscript>
+    </form>
+    <script>
+      document.getElementById('oauth-start')?.submit();
+    </script>
+  </body>
+</html>`
+
+  return c.html(html)
+})
 
 // Routes
 const authMethods = ['GET', 'POST', 'OPTIONS']
