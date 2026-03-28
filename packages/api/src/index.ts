@@ -151,7 +151,10 @@ app.get('/api/mobile-auth/complete', async (c) => {
     const current = await auth.api.getSession({ headers: c.req.raw.headers })
     const sessionId = current?.session?.id
     if (!sessionId) {
-      const target = `${appCallbackURL}${appCallbackURL.includes('?') ? '&' : '?'}error=missing_session`
+      const target =
+        `${appCallbackURL}${appCallbackURL.includes('?') ? '&' : '?'}error=missing_session` +
+        '&mobileAuth=missing_session'
+      console.warn('[mobile-auth/complete] missing session, redirecting to app callback')
       return c.redirect(target, 302)
     }
 
@@ -159,15 +162,23 @@ app.get('/api/mobile-auth/complete', async (c) => {
     const token = row[0]?.token
 
     if (!token) {
-      const target = `${appCallbackURL}${appCallbackURL.includes('?') ? '&' : '?'}error=missing_token`
+      const target =
+        `${appCallbackURL}${appCallbackURL.includes('?') ? '&' : '?'}error=missing_token` +
+        '&mobileAuth=missing_token'
+      console.warn('[mobile-auth/complete] missing token row for session, redirecting to app callback')
       return c.redirect(target, 302)
     }
 
     const target =
-      `${appCallbackURL}${appCallbackURL.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}`
+      `${appCallbackURL}${appCallbackURL.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}` +
+      '&mobileAuth=ok'
+    console.log('[mobile-auth/complete] token issued, redirecting to app callback')
     return c.redirect(target, 302)
   } catch {
-    const target = `${appCallbackURL}${appCallbackURL.includes('?') ? '&' : '?'}error=token_exchange_failed`
+    const target =
+      `${appCallbackURL}${appCallbackURL.includes('?') ? '&' : '?'}error=token_exchange_failed` +
+      '&mobileAuth=token_exchange_failed'
+    console.error('[mobile-auth/complete] token exchange failed, redirecting with error')
     return c.redirect(target, 302)
   }
 })

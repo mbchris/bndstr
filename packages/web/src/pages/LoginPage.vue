@@ -68,6 +68,8 @@
           <div>Window href: {{ windowHref }}</div>
           <div>Route redirect (raw): {{ routeRedirectRaw }}</div>
           <div>Route token (raw): {{ routeTokenRaw ? '(present)' : '(absent)' }}</div>
+          <div>Route mobileAuth (raw): {{ routeMobileAuthRaw }}</div>
+          <div>Route error (raw): {{ routeErrorRaw }}</div>
           <div>Redirect path (sanitized): {{ redirectPath }}</div>
           <div>API_URL (raw): {{ debugApiUrlRaw }}</div>
           <div>API base (effective): {{ debugApiBase }}</div>
@@ -177,6 +179,10 @@ const redirectPath = sanitizeRedirectPath(route.query.redirect)
 const routeRedirectRaw =
   typeof route.query.redirect === 'string' ? route.query.redirect : String(route.query.redirect ?? '(unset)')
 const routeTokenRaw = typeof route.query.token === 'string' ? route.query.token : ''
+const routeMobileAuthRaw =
+  typeof route.query.mobileAuth === 'string' ? route.query.mobileAuth : String(route.query.mobileAuth ?? '(unset)')
+const routeErrorRaw =
+  typeof route.query.error === 'string' ? route.query.error : String(route.query.error ?? '(unset)')
 const webCallbackUrl =
   redirectPath === '/'
     ? `${window.location.origin}/login`
