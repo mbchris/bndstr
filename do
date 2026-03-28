@@ -9,7 +9,7 @@ command="${1:-}"
 env_profile="${2:-local}"
 
 if [[ -z "$command" ]]; then
-  echo "Usage: ./do {start|dev|run|logs|stop|seed|install|build} [local]"
+  echo "Usage: ./do {start|dev|run|logs|stop|seed|install|build|build-apk} [local]"
   exit 1
 fi
 
@@ -53,6 +53,21 @@ run_migrations_if_needed() {
   "${APP_COMPOSE[@]}" run --rm dev sh -c "$COREPACK_NONINTERACTIVE corepack enable && pnpm install && pnpm --filter @bndstr/api exec tsx src/db/migrate.ts"
 }
 
+build_android_apk() {
+  local apk_path="packages/web/src-capacitor/android/app/build/outputs/apk/debug/app-debug.apk"
+  echo "Building Android APK (debug)..."
+  export COREPACK_ENABLE_DOWNLOAD_PROMPT=0 CI=1
+  corepack enable
+  corepack pnpm --filter @bndstr/web run build:android
+
+  if [[ -f "$apk_path" ]]; then
+    echo "APK built successfully: $apk_path"
+  else
+    echo "Error: APK build finished but file not found at: $apk_path"
+    exit 1
+  fi
+}
+
 case "$command" in
   start|dev|run)
     echo "Starting development server (local)..."
@@ -85,8 +100,11 @@ case "$command" in
     echo "Building production Docker image..."
     "${PROD_COMPOSE[@]}" build prod
     ;;
+  build-apk)
+    build_android_apk
+    ;;
   *)
-    echo "Usage: ./do {start|dev|run|logs|stop|seed|install|build} [local]"
+    echo "Usage: ./do {start|dev|run|logs|stop|seed|install|build|build-apk} [local]"
     exit 1
     ;;
 esac
