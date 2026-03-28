@@ -154,9 +154,16 @@ body.body--dark {
   text-transform: none;           // Kill the ALL CAPS
   letter-spacing: 0;
   transition: all var(--transition);
+  min-height: 34px;
+  padding: 0 10px;
 
   &--unelevated {
     box-shadow: none !important;
+  }
+
+  &--dense {
+    min-height: 28px;
+    padding: 0 8px;
   }
 
   // Ghost / outline buttons
@@ -199,6 +206,12 @@ body.body--dark {
   border-radius: var(--radius);
   border: 1px solid var(--border);
   backdrop-filter: blur(12px);
+}
+
+// Shared widget surface background (e.g. calendar/setlist style)
+.bg-widget-surface {
+  background: var(--surface-raised) !important;
+  color: var(--text);
 }
 
 // ─── Nav items — active state pill ──────────────────────────────

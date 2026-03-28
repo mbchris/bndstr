@@ -113,7 +113,7 @@
             </q-item>
           </q-list>
 
-          <q-banner v-else rounded class="bg-grey-2">No items in the setlist yet.</q-banner>
+          <q-banner v-else rounded class="bg-widget-surface">No items in the setlist yet.</q-banner>
         </q-card-section>
       </q-card>
     </div>

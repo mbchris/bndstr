@@ -54,7 +54,7 @@
                   <a v-if="song.youtubeUrl" :href="song.youtubeUrl" target="_blank" class="text-red text-caption text-weight-bold" style="text-decoration:none">YouTube</a>
                 </div>
                 <div class="row q-gutter-xs q-mt-sm">
-                  <div v-for="member in visibleMembers" :key="member.id" class="row items-center no-wrap bg-grey-2 rounded-borders q-px-xs q-py-xxs">
+                  <div v-for="member in visibleMembers" :key="member.id" class="row items-center no-wrap bg-widget-surface rounded-borders q-px-xs q-py-xxs">
                     <q-avatar
                       size="22px"
                       :class="getMemberVoteRingClass(song, member.id)"
@@ -105,7 +105,7 @@
             </q-item>
           </q-list>
 
-          <q-banner v-else rounded class="bg-grey-2">No songs yet. Add one to get started!</q-banner>
+          <q-banner v-else rounded class="bg-widget-surface">No songs yet. Add one to get started!</q-banner>
         </q-card-section>
       </q-card>
     </div>

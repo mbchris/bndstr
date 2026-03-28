@@ -13,15 +13,19 @@
             <q-card-section>
               <div class="row items-center justify-between">
                 <div class="text-subtitle1 text-weight-bold">Band Members</div>
-                <q-btn size="sm" color="primary" icon="person_add" label="Add" @click="showAddModal = true" />
+                <q-btn size="sm" color="primary" round dense icon="person_add" @click="showAddModal = true">
+                  <q-tooltip>Add Member</q-tooltip>
+                </q-btn>
               </div>
             </q-card-section>
             <q-table
+              class="admin-members-table"
               flat
               :rows="bandStore.members"
               :columns="columns"
               row-key="id"
               :pagination="{ rowsPerPage: 0 }"
+              :dense="$q.screen.lt.md"
               hide-pagination
             >
               <template #body-cell-isHidden="props">
@@ -62,30 +66,39 @@
                 <div class="col-12 col-sm-auto">
                   <q-btn
                     color="primary"
+                    round
+                    dense
                     icon="image"
-                    :label="pendingLogoDataUrl ? 'Change selection' : 'Select logo'"
                     :loading="logoProcessing"
                     @click="logoInputRef?.click()"
-                  />
+                  >
+                    <q-tooltip>{{ pendingLogoDataUrl ? 'Change selection' : 'Select logo' }}</q-tooltip>
+                  </q-btn>
                 </div>
                 <div class="col-12 col-sm-auto" v-if="pendingLogoDataUrl">
                   <q-btn
                     color="positive"
+                    round
+                    dense
                     icon="save"
-                    label="Save logo"
                     :loading="logoUploading"
                     @click="uploadLogo"
-                  />
+                  >
+                    <q-tooltip>Save logo</q-tooltip>
+                  </q-btn>
                 </div>
                 <div class="col-12 col-sm-auto" v-if="authStore.activeBand?.logo">
                   <q-btn
                     color="negative"
                     outline
+                    round
+                    dense
                     icon="delete"
-                    label="Remove logo"
                     :loading="logoUploading"
                     @click="removeLogo"
-                  />
+                  >
+                    <q-tooltip>Remove logo</q-tooltip>
+                  </q-btn>
                 </div>
               </div>
 
@@ -134,8 +147,8 @@
               <div class="text-subtitle1 text-weight-bold">Database Management</div>
             </q-card-section>
             <q-card-section class="q-gutter-sm">
-              <q-btn class="full-width" color="grey-8" icon="download" label="Download Backup" @click="exportDb" />
-              <q-btn class="full-width" color="orange" outline icon="upload" label="Import SQL" :loading="isImporting" @click="importInputRef?.click()" />
+              <q-btn class="full-width" color="grey-8" icon="download" @click="exportDb">Download Backup</q-btn>
+              <q-btn class="full-width" color="orange" outline icon="upload" :loading="isImporting" @click="importInputRef?.click()">Import SQL</q-btn>
               <input ref="importInputRef" type="file" accept=".sql,.db" class="hidden" style="display:none" @change="handleImport" />
               <div class="text-caption text-grey text-center">Warning: importing will overwrite existing data.</div>
             </q-card-section>
@@ -147,8 +160,8 @@
               <div class="text-subtitle1 text-weight-bold">Calendar Management</div>
             </q-card-section>
             <q-card-section class="q-gutter-sm">
-              <q-btn class="full-width" color="grey-8" icon="download" label="Export JSON" @click="exportCalendar" />
-              <q-btn class="full-width" color="blue" outline icon="upload" label="Import JSON" :loading="isCalendarImporting" @click="calendarImportRef?.click()" />
+              <q-btn class="full-width" color="grey-8" icon="download" @click="exportCalendar">Export JSON</q-btn>
+              <q-btn class="full-width" color="blue" outline icon="upload" :loading="isCalendarImporting" @click="calendarImportRef?.click()">Import JSON</q-btn>
               <input ref="calendarImportRef" type="file" accept=".json" class="hidden" style="display:none" @change="handleCalendarImport" />
               <div class="text-caption text-grey text-center">Import calendar events from JSON.</div>
             </q-card-section>
@@ -485,3 +498,16 @@ onMounted(() => {
   fetchStatus()
 })
 </script>
+
+<style scoped>
+@media (max-width: 600px) {
+  .admin-members-table :deep(table) {
+    font-size: 0.8rem;
+  }
+
+  .admin-members-table :deep(.q-table th),
+  .admin-members-table :deep(.q-table td) {
+    padding: 6px 8px;
+  }
+}
+</style>

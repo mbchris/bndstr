@@ -61,7 +61,7 @@
           <q-card-section>
             <div class="row items-center justify-between">
               <div class="text-h6 text-red">
-                <q-icon name="rocket_launch" class="q-mr-xs" />
+                <q-icon name="microphone" class="q-mr-xs" />
                 {{ t('home.upcomingGigs') }}
               </div>
               <q-btn v-if="isAdmin" flat round dense icon="edit" size="sm" @click="openGigEdit" />
@@ -122,7 +122,7 @@
           <q-space /><q-btn flat round dense icon="close" v-close-popup />
         </q-card-section>
         <q-card-section style="max-height: 60vh; overflow-y: auto">
-          <div v-for="(gig, i) in editedGigs" :key="i" class="q-pa-md q-mb-md rounded-borders bg-grey-2">
+          <div v-for="(gig, i) in editedGigs" :key="i" class="q-pa-md q-mb-md rounded-borders bg-widget-surface">
             <div class="row items-center justify-between q-mb-sm">
               <span class="text-overline text-grey">{{ t('home.gigNumber') }} #{{ i + 1 }}</span>
               <q-btn flat round dense icon="delete" color="red" size="sm" @click="editedGigs.splice(i, 1)" />

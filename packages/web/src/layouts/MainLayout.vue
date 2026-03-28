@@ -188,7 +188,7 @@ async function handleLogout() {
 }
 
 .top-nav-btn {
-  border-radius: 999px;
+  border-radius: 8px;
   border: 1px solid transparent;
   white-space: nowrap;
   color: #374151;

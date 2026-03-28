@@ -95,7 +95,7 @@
         </q-card-section>
         <q-card-section class="q-gutter-md">
           <q-input v-model="editForm.name" label="Band name" outlined dense />
-          <q-banner class="bg-grey-2 text-dark rounded-borders">
+          <q-banner class="bg-widget-surface rounded-borders">
             URL slug is system-generated and cannot be changed.
           </q-banner>
         </q-card-section>
