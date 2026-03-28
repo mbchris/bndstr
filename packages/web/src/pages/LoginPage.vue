@@ -77,8 +77,21 @@ const testingBands = ref(false)
 const debugOutput = ref('')
 const rawApiUrl = (process.env.API_URL ?? '').trim()
 const debugApiUrlRaw = rawApiUrl || '(empty)'
-const debugApiBase = (rawApiUrl || '').replace(/\/+$/, '').replace(/\/api$/, '') || '(empty)'
-const debugAuthUrl = debugApiBase !== '(empty)' ? `${debugApiBase}/api/auth` : '(empty)'
+const normalizedApiBase = (rawApiUrl || '').replace(/\/+$/, '').replace(/\/api$/, '')
+const debugApiBase = normalizedApiBase || '(same-origin /api)'
+const debugAuthUrl = normalizedApiBase ? `${normalizedApiBase}/api/auth` : '/api/auth'
+
+function buildTestUrls(path: string): string[] {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+  const urls = new Set<string>()
+
+  if (normalizedApiBase) {
+    urls.add(`${normalizedApiBase}/api${normalizedPath}`)
+  }
+  urls.add(`/api${normalizedPath}`)
+
+  return [...urls]
+}
 
 async function loginGoogle() {
   loadingGoogle.value = true
@@ -110,52 +123,54 @@ async function loginGithub() {
   }
 }
 
-async function runEndpointTest(label: string, url: string) {
+async function runEndpointTest(label: string, path: string) {
   const started = Date.now()
-  try {
-    const res = await fetch(url, {
-      method: 'GET',
-      credentials: 'include',
-      headers: { Accept: 'application/json' },
-    })
-    const text = await res.text()
-    const preview = text.length > 500 ? `${text.slice(0, 500)}...` : text
-    debugOutput.value =
-      `[${label}] OK\n` +
-      `url=${url}\n` +
-      `status=${res.status} ${res.statusText}\n` +
-      `duration_ms=${Date.now() - started}\n` +
-      `body=${preview || '(empty)'}`
-  } catch (e: unknown) {
-    debugOutput.value =
-      `[${label}] ERROR\n` +
-      `url=${url}\n` +
-      `duration_ms=${Date.now() - started}\n` +
-      `error=${e instanceof Error ? e.message : String(e)}`
+  const urls = buildTestUrls(path)
+  const errors: string[] = []
+
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, {
+        method: 'GET',
+        credentials: 'include',
+        headers: { Accept: 'application/json' },
+      })
+      const text = await res.text()
+      const preview = text.length > 500 ? `${text.slice(0, 500)}...` : text
+      debugOutput.value =
+        `[${label}] OK\n` +
+        `url=${url}\n` +
+        `status=${res.status} ${res.statusText}\n` +
+        `duration_ms=${Date.now() - started}\n` +
+        `body=${preview || '(empty)'}`
+      return
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e)
+      errors.push(`url=${url} error=${message}`)
+    }
   }
+
+  debugOutput.value =
+    `[${label}] ERROR\n` +
+    `duration_ms=${Date.now() - started}\n` +
+    `window_origin=${window.location.origin}\n` +
+    `api_url_raw=${debugApiUrlRaw}\n` +
+    `${errors.join('\n') || 'No request attempts were made'}`
 }
 
 async function testAuthEndpoint() {
-  if (debugApiBase === '(empty)') {
-    debugOutput.value = '[Auth Test] ERROR\nAPI base is empty'
-    return
-  }
   testingAuth.value = true
   try {
-    await runEndpointTest('Auth Test', `${debugApiBase}/api/auth/get-session`)
+    await runEndpointTest('Auth Test', '/auth/get-session')
   } finally {
     testingAuth.value = false
   }
 }
 
 async function testBandsEndpoint() {
-  if (debugApiBase === '(empty)') {
-    debugOutput.value = '[Bands Test] ERROR\nAPI base is empty'
-    return
-  }
   testingBands.value = true
   try {
-    await runEndpointTest('Bands Test', `${debugApiBase}/api/bands`)
+    await runEndpointTest('Bands Test', '/bands')
   } finally {
     testingBands.value = false
   }
