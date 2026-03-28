@@ -190,6 +190,14 @@ body.body--light .header-action-btn.q-btn--flat:hover {
   background: rgba(17, 24, 39, 0.08);
 }
 
+// Ensure header typography stays readable on bright backgrounds.
+body.body--light .q-header,
+body.body--light .q-header .q-toolbar,
+body.body--light .q-header .q-toolbar__title,
+body.body--light .q-header .q-item-label[header] {
+  color: #111827;
+}
+
 // ─── Scrollbar — minimal ─────────────────────────────────────────
 ::-webkit-scrollbar {
   width: 6px;
