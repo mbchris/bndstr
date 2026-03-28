@@ -53,6 +53,33 @@ Docker compose files are available for containerized workflows:
 - `docker-compose.dev.yml`: local PostgreSQL
 - `docker-compose.yml`: unified API + Quasar web deployment profiles
 
+## Verify Remote Containers (curl)
+
+Use these checks against your deployed domain to confirm the web and API containers are up:
+
+```bash
+DOMAIN="http://localhost:3001"
+#DOMAIN="https://bndstr.trmusic.de"
+
+
+# 1) API container health (should return {"ok":true,...})
+curl -fsS "$DOMAIN/health"
+
+# 2) API routing through web/nginx (should return JSON, e.g. {"session":null})
+curl -fsS "$DOMAIN/api/auth/get-session"
+
+# 3) Web container serving SPA (should start with <!DOCTYPE html>)
+curl -fsS "$DOMAIN" | head -n 5
+```
+
+Optional: print HTTP status only for quick checks:
+
+```bash
+curl -o /dev/null -s -w "health: %{http_code}\n" "$DOMAIN/health"
+curl -o /dev/null -s -w "api: %{http_code}\n" "$DOMAIN/api/auth/get-session"
+curl -o /dev/null -s -w "web: %{http_code}\n" "$DOMAIN/"
+```
+
 ## Repository Structure
 
 ```text
