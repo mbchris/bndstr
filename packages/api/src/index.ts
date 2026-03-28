@@ -100,17 +100,34 @@ app.get('/api/mobile-auth/start', (c) => {
     <title>bndstr login</title>
   </head>
   <body>
-    <form id="oauth-start" method="post" action="${escapeHtml(formAction)}">
-      <input type="hidden" name="provider" value="${escapeHtml(provider)}" />
-      <input type="hidden" name="callbackURL" value="${escapeHtml(callbackURL)}" />
-      <input type="hidden" name="errorCallbackURL" value="${escapeHtml(errorCallbackURL)}" />
-      <input type="hidden" name="disableRedirect" value="false" />
-      <noscript>
-        <button type="submit">Continue</button>
-      </noscript>
-    </form>
+    <noscript>JavaScript is required to continue login.</noscript>
     <script>
-      document.getElementById('oauth-start')?.submit();
+      (async () => {
+        try {
+          const res = await fetch(${JSON.stringify(formAction)}, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+              provider: ${JSON.stringify(provider)},
+              callbackURL: ${JSON.stringify(callbackURL)},
+              errorCallbackURL: ${JSON.stringify(errorCallbackURL)},
+              disableRedirect: true
+            })
+          });
+
+          const payload = await res.json().catch(() => ({}));
+          if (!res.ok || !payload || !payload.url) {
+            throw new Error(payload?.message || 'Unable to start social login');
+          }
+
+          window.location.href = String(payload.url);
+        } catch (err) {
+          const target = ${JSON.stringify(errorCallbackURL)};
+          const msg = err instanceof Error ? err.message : String(err);
+          window.location.href = target + (target.includes('?') ? '&' : '?') + 'error=' + encodeURIComponent(msg);
+        }
+      })();
     </script>
   </body>
 </html>`
