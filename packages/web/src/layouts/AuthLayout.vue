@@ -22,6 +22,10 @@
         </div>
       </q-page>
     </q-page-container>
+
+    <q-footer bordered class="impress-footer">
+      <router-link to="/impress" class="impress-link">Impress</router-link>
+    </q-footer>
   </q-layout>
 </template>
 
@@ -71,5 +75,25 @@
   .auth-overlay {
     padding: 14px;
   }
+}
+
+.impress-footer {
+  min-height: 28px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(3, 8, 20, 0.5);
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.impress-link {
+  font-size: 12px;
+  line-height: 1;
+  color: rgba(226, 232, 240, 0.9);
+  text-decoration: none;
+}
+
+.impress-link:hover {
+  text-decoration: underline;
 }
 </style>

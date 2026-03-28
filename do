@@ -7,29 +7,83 @@ cd "$SCRIPT_DIR"
 
 command="${1:-}"
 env_profile="${2:-local}"
+build_apk_sign=1
+build_apk_install=1
+
+if [[ "$command" == "build-apk" ]]; then
+  for arg in "${@:3}"; do
+    case "$arg" in
+      --no-sign)
+        build_apk_sign=0
+        ;;
+      --no-install)
+        build_apk_install=0
+        ;;
+      *)
+        echo "Error: Unknown option for build-apk: $arg"
+        echo "Usage: ./do build-apk [local|production] [--no-sign] [--no-install]"
+        exit 1
+        ;;
+    esac
+  done
+fi
 
 if [[ -z "$command" ]]; then
-  echo "Usage: ./do {start|dev|run|logs|stop|seed|install|build|build-apk} [local]"
+  echo "Usage: ./do {start|dev|run|logs|stop|seed|install|build|build-apk} [local|production] [--no-sign] [--no-install]"
   exit 1
 fi
 
-if [[ "$env_profile" != "local" ]]; then
-  echo "Error: Only local mode is supported. Use: ./do <command> local"
+if [[ "$command" == "build-apk" ]]; then
+  if [[ "$env_profile" != "local" && "$env_profile" != "production" ]]; then
+    echo "Error: build-apk supports only local or production. Use: ./do build-apk {local|production}"
+    exit 1
+  fi
+elif [[ "$env_profile" != "local" ]]; then
+  echo "Error: Only local mode is supported for this command. Use: ./do <command> local"
   exit 1
 fi
 
-if [[ -f ".env.local" ]]; then
-  env_file=".env.local"
-elif [[ -f ".env" ]]; then
-  echo "Warning: .env.local not found. Falling back to .env"
-  env_file=".env"
+if [[ "$env_profile" == "production" ]]; then
+  if [[ -f ".env.production" ]]; then
+    env_file=".env.production"
+  elif [[ -f ".env" ]]; then
+    echo "Warning: .env.production not found. Falling back to .env"
+    env_file=".env"
+  else
+    echo "Error: Neither .env.production nor .env found."
+    exit 1
+  fi
 else
-  echo "Error: Neither .env.local nor .env found."
-  exit 1
+  if [[ -f ".env.local" ]]; then
+    env_file=".env.local"
+  elif [[ -f ".env" ]]; then
+    echo "Warning: .env.local not found. Falling back to .env"
+    env_file=".env"
+  else
+    echo "Error: Neither .env.local nor .env found."
+    exit 1
+  fi
 fi
 
 echo "Using environment configuration: $env_file"
 export ENV_FILE="$env_file"
+
+get_env_value() {
+  local key="$1"
+  local file="$2"
+  local line
+  line="$(grep -E "^${key}=" "$file" | tail -n 1 || true)"
+  if [[ -z "$line" ]]; then
+    return 1
+  fi
+  local value="${line#*=}"
+  value="${value%$'\r'}"
+  value="${value#\"}"
+  value="${value%\"}"
+  value="${value#\'}"
+  value="${value%\'}"
+  printf '%s\n' "$value"
+}
 
 DB_COMPOSE=(docker compose -f docker-compose.dev.yml)
 APP_COMPOSE=(docker compose --profile dev)
@@ -54,6 +108,9 @@ run_migrations_if_needed() {
 }
 
 build_android_apk() {
+  local sign_apk="$1"
+  local install_apk="$2"
+
   get_java_major() {
     local java_bin="$1"
     local first_line
@@ -118,17 +175,97 @@ build_android_apk() {
 
   local release_apk="packages/web/src-capacitor/android/app/build/outputs/apk/release/app-release.apk"
   local release_unsigned_apk="packages/web/src-capacitor/android/app/build/outputs/apk/release/app-release-unsigned.apk"
+  local release_signed_apk="packages/web/src-capacitor/android/app/build/outputs/apk/release/app-release-signed.apk"
+  local final_apk=""
 
   if [[ -f "$release_apk" ]]; then
-    echo "APK built successfully: $release_apk"
+    final_apk="$release_apk"
+    echo "APK built successfully: $final_apk"
+  elif [[ -f "$release_signed_apk" ]]; then
+    final_apk="$release_signed_apk"
+    echo "APK built successfully: $final_apk"
   elif [[ -f "$release_unsigned_apk" ]]; then
-    echo "APK built successfully: $release_unsigned_apk"
+    if [[ "$sign_apk" == "1" ]]; then
+      local apksigner_bin=""
+      local user_home="${USERPROFILE:-$HOME}"
+      local debug_keystore="$user_home/.android/debug.keystore"
+
+      if command -v apksigner >/dev/null 2>&1; then
+        apksigner_bin="apksigner"
+      elif [[ -n "$sdk_path" && -d "$sdk_path/build-tools" ]]; then
+        local latest_build_tools
+        latest_build_tools="$(ls -1 "$sdk_path/build-tools" 2>/dev/null | sort -V | tail -n 1 || true)"
+        if [[ -n "$latest_build_tools" ]]; then
+          if [[ -x "$sdk_path/build-tools/$latest_build_tools/apksigner" ]]; then
+            apksigner_bin="$sdk_path/build-tools/$latest_build_tools/apksigner"
+          elif [[ -f "$sdk_path/build-tools/$latest_build_tools/apksigner.bat" ]]; then
+            apksigner_bin="$sdk_path/build-tools/$latest_build_tools/apksigner.bat"
+          fi
+        fi
+      fi
+
+      if [[ -z "$apksigner_bin" ]]; then
+        echo "Error: release APK is unsigned and apksigner was not found."
+        echo "Install Android build-tools or run './do build-apk $env_profile --no-sign'."
+        exit 1
+      fi
+
+      if [[ ! -f "$debug_keystore" ]]; then
+        echo "Error: debug keystore not found at $debug_keystore"
+        echo "Run an Android debug build once to create it, or run './do build-apk $env_profile --no-sign'."
+        exit 1
+      fi
+
+      rm -f "$release_signed_apk"
+      "$apksigner_bin" sign \
+        --ks "$debug_keystore" \
+        --ks-key-alias androiddebugkey \
+        --ks-pass pass:android \
+        --key-pass pass:android \
+        --out "$release_signed_apk" \
+        "$release_unsigned_apk"
+
+      final_apk="$release_signed_apk"
+      echo "APK built and signed successfully: $final_apk"
+    else
+      final_apk="$release_unsigned_apk"
+      echo "APK built successfully (unsigned): $final_apk"
+      echo "Signing skipped due to --no-sign."
+    fi
   elif [[ -f "$apk_path" ]]; then
-    echo "APK built successfully: $apk_path"
+    final_apk="$apk_path"
+    echo "APK built successfully: $final_apk"
   else
-    echo "Error: APK build finished but file not found at: $release_apk, $release_unsigned_apk (or $apk_path)"
+    echo "Error: APK build finished but file not found at: $release_apk, $release_signed_apk, $release_unsigned_apk (or $apk_path)"
     exit 1
   fi
+
+  if [[ "$install_apk" != "1" ]]; then
+    echo "APK install skipped due to --no-install."
+    return 0
+  fi
+
+  if ! command -v adb >/dev/null 2>&1; then
+    echo "Error: adb not found in PATH."
+    echo "Install Android platform-tools or run './do build-apk $env_profile --no-install'."
+    exit 1
+  fi
+
+  local device_id=""
+  device_id="$(get_env_value ANDROID_DEVICE_ID "$env_file" || true)"
+  if [[ -z "$device_id" ]]; then
+    device_id="$(get_env_value ADB_DEVICE_ID "$env_file" || true)"
+  fi
+
+  echo "Installing APK via adb..."
+  if [[ -n "$device_id" ]]; then
+    echo "Using device from $env_file: $device_id"
+    adb -s "$device_id" install -r "$final_apk"
+  else
+    adb install -r "$final_apk"
+  fi
+
+  echo "APK installed successfully."
 }
 
 case "$command" in
@@ -164,10 +301,10 @@ case "$command" in
     "${PROD_COMPOSE[@]}" build prod
     ;;
   build-apk)
-    build_android_apk
+    build_android_apk "$build_apk_sign" "$build_apk_install"
     ;;
   *)
-    echo "Usage: ./do {start|dev|run|logs|stop|seed|install|build|build-apk} [local]"
+    echo "Usage: ./do {start|dev|run|logs|stop|seed|install|build|build-apk} [local|production] [--no-sign] [--no-install]"
     exit 1
     ;;
 esac
