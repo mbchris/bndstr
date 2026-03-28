@@ -69,12 +69,18 @@
             :key="link.to"
             flat
             dense
-            no-caps
-            :label="link.label"
             :to="link.to"
             class="top-nav-btn q-mr-xs"
             :class="{ 'top-nav-btn--active': isActiveRoute(link.to) }"
-          />
+            :aria-label="link.label"
+            :title="link.label"
+          >
+            <img
+              :src="isActiveRoute(link.to) ? link.iconActive : link.iconInactive"
+              :alt="link.label"
+              class="top-nav-icon"
+            />
+          </q-btn>
         </div>
       </div>
     </q-header>
@@ -94,6 +100,16 @@ import { useBandStore } from '../stores/band'
 import { useI18n } from '../composables/useI18n'
 import defaultLogoDark from '../assets/bndstr_rect_wh.webp'
 import defaultLogoLight from '../assets/bndstr_rect_bl.webp'
+import homeBl from '../../../../assets/icons/home_bl.webp'
+import homeWh from '../../../../assets/icons/home_wh.webp'
+import votingBl from '../../../../assets/icons/voting_bl.webp'
+import votingWh from '../../../../assets/icons/voting_wh.webp'
+import setlistBl from '../../../../assets/icons/setlist_bl.webp'
+import setlistWh from '../../../../assets/icons/setlist_wh.webp'
+import calendarBl from '../../../../assets/icons/calendar_bl.webp'
+import calendarWh from '../../../../assets/icons/calendar_wh.webp'
+import bendastandWh from '../../../../assets/icons/bendastand_wh.webp'
+import adminBl from '../../../../assets/icons/admin_bl.webp'
 
 const authStore = useAuthStore()
 const bandStore = useBandStore()
@@ -125,15 +141,15 @@ const isAdmin = computed(() => {
 
 const navLinks = computed(() => {
   const links = [
-    { icon: 'home', label: t('nav.home'), to: '/' },
-    { icon: 'how_to_vote', label: t('nav.voting'), to: '/voting' },
-    { icon: 'queue_music', label: t('nav.setlist'), to: '/setlist' },
-    { icon: 'calendar_today', label: t('nav.calendar'), to: '/calendar' },
-    { icon: 'music_note', label: t('nav.bendAStand'), to: '/stand' },
+    { label: t('nav.home'), to: '/', iconInactive: homeBl, iconActive: homeWh },
+    { label: t('nav.voting'), to: '/voting', iconInactive: votingBl, iconActive: votingWh },
+    { label: t('nav.setlist'), to: '/setlist', iconInactive: setlistBl, iconActive: setlistWh },
+    { label: t('nav.calendar'), to: '/calendar', iconInactive: calendarBl, iconActive: calendarWh },
+    { label: t('nav.bendAStand'), to: '/stand', iconInactive: bendastandWh, iconActive: bendastandWh },
   ]
 
   if (isAdmin.value) {
-    links.push({ icon: 'admin_panel_settings', label: t('nav.admin'), to: '/admin' })
+    links.push({ label: t('nav.admin'), to: '/admin', iconInactive: adminBl, iconActive: adminBl })
   }
 
   // links.push({ icon: 'payment', label: 'Billing', to: '/billing' })
@@ -188,16 +204,25 @@ async function handleLogout() {
 }
 
 .top-nav-btn {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  min-height: 48px;
+  padding: 8px;
   border-radius: 8px;
   border: 1px solid transparent;
-  white-space: nowrap;
-  color: #374151;
 }
 
 .top-nav-btn--active {
-  background: rgba(148, 163, 184, 0.24);
-  border-color: rgba(100, 116, 139, 0.42);
-  color: #111827;
+  background: #111827;
+  border-color: #111827;
+}
+
+.top-nav-icon {
+  display: block;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
 }
 
 .brand-link {
