@@ -1,6 +1,6 @@
 <template>
   <q-layout view="lHh Lpr lFf">
-    <q-header bordered class="bg-transparent">
+    <q-header bordered class="bg-transparent safe-area-top">
       <q-toolbar class="q-px-sm q-px-md-md">
         <q-toolbar-title>
           <router-link to="/" class="brand-link">
@@ -62,36 +62,37 @@
           </q-btn>
         </div>
       </q-toolbar>
-
-      <div v-if="showTopNav" class="top-nav q-px-sm q-pb-sm">
-        <div class="row items-center no-wrap top-nav-scroll justify-center">
-          <q-btn
-            v-for="link in navLinks"
-            :key="link.to"
-            flat
-            dense
-            :to="link.to"
-            class="top-nav-btn q-mr-xs"
-            :class="{ 'top-nav-btn--active': isActiveRoute(link.to) }"
-            :aria-label="link.label"
-            :title="link.label"
-          >
-            <img
-              :src="isActiveRoute(link.to) ? link.iconActive : link.iconInactive"
-              :alt="link.label"
-              class="top-nav-icon"
-            />
-          </q-btn>
-        </div>
-      </div>
     </q-header>
 
     <q-page-container>
       <router-view />
     </q-page-container>
 
-    <q-footer bordered class="impress-footer">
-      <router-link to="/impress" class="impress-link">Impress</router-link>
+    <q-footer bordered class="bottom-nav-footer safe-area-bottom">
+      <div v-if="showTopNav" class="bottom-nav q-px-sm q-py-xs">
+        <div class="row items-center no-wrap bottom-nav-scroll justify-center">
+          <q-btn
+            v-for="link in navLinks"
+            :key="link.to"
+            flat
+            dense
+            :to="link.to"
+            class="bottom-nav-btn q-mr-xs"
+            :class="{ 'bottom-nav-btn--active': isActiveRoute(link.to) }"
+            :aria-label="link.label"
+            :title="link.label"
+          >
+            <img
+              :src="isActiveRoute(link.to) ? link.iconActive : link.iconInactive"
+              :alt="link.label"
+              class="bottom-nav-icon"
+            />
+          </q-btn>
+        </div>
+      </div>
+      <div class="impress-row">
+        <router-link to="/impress" class="impress-link">Impress</router-link>
+      </div>
     </q-footer>
   </q-layout>
 </template>
@@ -194,22 +195,35 @@ async function handleLogout() {
 </script>
 
 <style scoped>
-.top-nav {
-  background: rgba(243, 244, 246, 0.92);
-  border-top: 1px solid rgba(17, 24, 39, 0.08);
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
-.top-nav-scroll {
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.bottom-nav-footer {
+  background: transparent;
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.bottom-nav {
+  background: rgba(243, 244, 246, 0.92);
+  border-bottom: 1px solid rgba(17, 24, 39, 0.08);
+}
+
+.bottom-nav-scroll {
   overflow-x: auto;
   scrollbar-width: none;
   padding-bottom: 2px;
 }
 
-.top-nav-scroll::-webkit-scrollbar {
+.bottom-nav-scroll::-webkit-scrollbar {
   display: none;
 }
 
-.top-nav-btn {
+.bottom-nav-btn {
   width: 48px;
   height: 48px;
   min-width: 48px;
@@ -219,12 +233,12 @@ async function handleLogout() {
   border: 1px solid transparent;
 }
 
-.top-nav-btn--active {
+.bottom-nav-btn--active {
   background: #111827;
   border-color: #111827;
 }
 
-.top-nav-icon {
+.bottom-nav-icon {
   display: block;
   width: 24px;
   height: 24px;
@@ -244,13 +258,11 @@ async function handleLogout() {
   object-fit: contain;
 }
 
-.impress-footer {
+.impress-row {
   min-height: 28px;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: transparent;
-  border-top: 1px solid rgba(148, 163, 184, 0.2);
 }
 
 .impress-link {
