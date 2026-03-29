@@ -19,6 +19,8 @@
     "db:generate": "pnpm --filter @bndstr/api run db:generate",
     "db:migrate": "pnpm --filter @bndstr/api run db:migrate",
     "db:migrate:runtime": "pnpm --filter @bndstr/api run db:migrate:runtime",
+    "db:init": "bash ./scripts/init-empty-db.sh",
+    "db:reset": "bash ./scripts/reset-db.sh",
     "db:studio": "pnpm --filter @bndstr/api run db:studio",
     "db:seed": "pnpm --filter @bndstr/api run db:seed"
   },
