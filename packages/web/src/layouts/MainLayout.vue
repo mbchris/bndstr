@@ -54,6 +54,9 @@
                 <q-item clickable v-close-popup @click="goBilling">
                   <q-item-section>Subscriptions</q-item-section>
                 </q-item>
+                <q-item clickable v-close-popup @click="router.push('/impress')">
+                  <q-item-section>Impress</q-item-section>
+                </q-item>
                 <q-item clickable v-close-popup @click="handleLogout">
                   <q-item-section>Logout</q-item-section>
                 </q-item>
@@ -89,9 +92,6 @@
             />
           </q-btn>
         </div>
-      </div>
-      <div class="impress-row">
-        <router-link to="/impress" class="impress-link">Impress</router-link>
       </div>
     </q-footer>
   </q-layout>
@@ -188,7 +188,24 @@ function goBilling() {
 
 async function handleLogout() {
   const { authClient } = await import('../boot/auth')
-  await authClient.signOut()
+  try {
+    // Revoke the session server-side (invalidates the token)
+    if (authStore.token) {
+      const apiBase = (import.meta.env?.VITE_API_URL || process.env.API_URL || '').replace(/\/+$/, '').replace(/\/api$/, '')
+      await fetch(`${apiBase}/api/auth/sign-out`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authStore.token}`,
+        },
+        credentials: 'include',
+      })
+    } else {
+      await authClient.signOut()
+    }
+  } catch {
+    // Continue with local cleanup even if server call fails
+  }
   authStore.clearSession()
   window.location.href = '/login'
 }
@@ -210,7 +227,6 @@ async function handleLogout() {
 
 .bottom-nav {
   background: rgba(243, 244, 246, 0.92);
-  border-bottom: 1px solid rgba(17, 24, 39, 0.08);
 }
 
 .bottom-nav-scroll {
@@ -224,12 +240,12 @@ async function handleLogout() {
 }
 
 .bottom-nav-btn {
-  width: 48px;
-  height: 48px;
-  min-width: 48px;
-  min-height: 48px;
-  padding: 8px;
-  border-radius: 8px;
+  width: 62px;
+  height: 62px;
+  min-width: 62px;
+  min-height: 62px;
+  padding: 10px;
+  border-radius: 10px;
   border: 1px solid transparent;
 }
 
@@ -240,8 +256,8 @@ async function handleLogout() {
 
 .bottom-nav-icon {
   display: block;
-  width: 24px;
-  height: 24px;
+  width: 31px;
+  height: 31px;
   object-fit: contain;
 }
 
@@ -258,22 +274,5 @@ async function handleLogout() {
   object-fit: contain;
 }
 
-.impress-row {
-  min-height: 28px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.impress-link {
-  font-size: 12px;
-  line-height: 1;
-  color: rgba(100, 116, 139, 1);
-  text-decoration: none;
-}
-
-.impress-link:hover {
-  text-decoration: underline;
-}
 </style>
 

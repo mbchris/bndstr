@@ -1,5 +1,11 @@
 <template>
   <div class="login-page-wrap">
+    <div v-if="processingToken" class="column items-center justify-center q-pa-xl">
+      <q-spinner-orbit color="white" size="56px" />
+      <div class="text-grey-4 q-mt-md text-body2">Signing you in…</div>
+    </div>
+
+    <template v-else>
     <q-btn
       v-if="isDebugMode"
       class="debug-icon-btn"
@@ -129,6 +135,7 @@
         </q-card-section>
       </q-card>
     </q-dialog>
+    </template>
   </div>
 </template>
 
@@ -139,6 +146,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { authClient } from '../boot/auth'
 import { useAuthStore } from '../stores/auth'
 
+const processingToken = ref(!!((new URLSearchParams(window.location.search)).get('token') || window.location.hash.includes('token=')))
 const loadingGoogle = ref(false)
 const loadingGithub = ref(false)
 const error = ref<string | null>(null)
@@ -469,17 +477,25 @@ async function copyDebugToClipboard() {
 }
 
 onMounted(async () => {
-  if (!routeTokenRaw) return
+  if (!routeTokenRaw) {
+    processingToken.value = false
+    return
+  }
 
-  authStore.setToken(routeTokenRaw)
-  await authStore.loadSession()
+  processingToken.value = true
+  try {
+    authStore.setToken(routeTokenRaw)
+    await authStore.loadSession()
 
-  const query = { ...route.query }
-  delete query.token
-  await router.replace({ path: '/login', query })
+    const query = { ...route.query }
+    delete query.token
+    await router.replace({ path: '/login', query })
 
-  if (authStore.isAuthenticated) {
-    await router.replace({ path: redirectPath })
+    if (authStore.isAuthenticated) {
+      await router.replace({ path: redirectPath })
+    }
+  } finally {
+    processingToken.value = false
   }
 })
 
