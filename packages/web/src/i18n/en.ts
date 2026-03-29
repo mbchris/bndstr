@@ -12,6 +12,10 @@ export default {
     signOut: 'Sign out',
     signIn: 'Sign in members',
     menu: 'Menu',
+    allBands: 'All Bands',
+    active: 'Active',
+    subscriptions: 'Subscriptions',
+    impress: 'Impress',
   },
 
   // Common
@@ -27,6 +31,7 @@ export default {
     loading: 'Loading...',
     allRightsReserved: 'All rights reserved.',
     signedIn: 'Signed in',
+    title: 'Title',
   },
 
   // Login page
@@ -44,6 +49,7 @@ export default {
     errorEmail: 'The e-mail could not be sent.',
     errorCredentials: 'Sign in failed. Check the details you provided are correct.',
     errorGeneric: 'An unexpected error occurred. Please try again.',
+    signingIn: 'Signing you in…',
   },
 
   // Home page
@@ -120,6 +126,7 @@ export default {
     tentativeLabel: 'Tentative (not yet confirmed)',
     more: '+ {n} more',
     days: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+    noEventsDay: 'No events for this day.',
   },
 
   // Voting page
@@ -161,6 +168,7 @@ export default {
     lookingUp: 'Looking up...',
     lookupFailed: 'Could not find song details. Please fill in manually.',
     exportExcel: 'Export to Excel',
+    avg: 'Avg',
   },
 
   // Setlist page
@@ -192,6 +200,14 @@ export default {
     personalNotes: 'Personal Notes',
     personalNotesHint: 'Only visible to you.',
     exportExcel: 'Export to Excel',
+    masterSetlist: 'Master Setlist',
+    addSongTitle: 'Add New Song to Master Setlist',
+    addGigSongTitle: 'Add Master Songs to Gig Setlist',
+    selectSongs: 'Select songs...',
+    selectAll: 'Select All',
+    selectNone: 'Select None',
+    addToGig: 'Add to Gig',
+    emptyNote: 'Empty note',
   },
 
   // Admin page
@@ -231,6 +247,18 @@ export default {
     hiddenHint: 'Hidden users cannot vote and are excluded from the Bierwart rotation.',
     beerCount: 'Beer Counter',
     beerAdded: 'Beer brought!',
+    bandLogo: 'Band Logo',
+    noLogo: 'No custom logo uploaded.',
+    selectLogo: 'Select logo',
+    changeLogo: 'Change selection',
+    saveLogo: 'Save logo',
+    removeLogo: 'Remove logo',
+    logoHint: 'Max 150KB. Center-cropped to 830×460, converted to WEBP.',
+    logoUpdated: 'Logo updated',
+    logoRemoved: 'Logo removed',
+    pending: 'Pending',
+    removeMember: 'Remove Member',
+    removeLogoConfirm: 'Remove the custom band logo?',
   },
 
   // Language

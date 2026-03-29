@@ -4,8 +4,8 @@
       <q-card flat bordered>
         <q-card-section>
           <div class="row items-center justify-between">
-            <div class="text-h5 text-weight-bold">Calendar</div>
-            <q-btn flat dense label="Today" @click="goToToday" />
+            <div class="text-h5 text-weight-bold">{{ t('nav.calendar') }}</div>
+            <q-btn flat dense :label="t('calendar.today')" @click="goToToday" />
           </div>
         </q-card-section>
 
@@ -46,7 +46,7 @@
                   </div>
                 </template>
                 <div v-if="getEvents(dayData.year, dayData.month, dayData.day).length > 3" class="text-caption text-grey" style="font-size: 9px">
-                  + {{ getEvents(dayData.year, dayData.month, dayData.day).length - 3 }} more
+                  {{ t('calendar.more', { n: getEvents(dayData.year, dayData.month, dayData.day).length - 3 }) }}
                 </div>
               </div>
             </div>
@@ -59,11 +59,11 @@
     <q-dialog v-model="showEventModal">
       <q-card style="min-width: 450px">
         <q-card-section class="row items-center">
-          <div class="text-h6">{{ editingEvent ? 'Edit Event' : 'Create Event' }}</div>
+          <div class="text-h6">{{ editingEvent ? t('calendar.editEvent') : t('calendar.createEvent') }}</div>
           <q-space /><q-btn flat round dense icon="close" v-close-popup />
         </q-card-section>
         <q-card-section class="q-gutter-md">
-          <q-input v-model="form.title" label="Title" outlined dense autofocus />
+          <q-input v-model="form.title" :label="t('common.title')" outlined dense autofocus />
 
           <div class="row q-gutter-sm">
             <q-select
@@ -73,7 +73,7 @@
               map-options
               outlined
               dense
-              label="Type"
+              :label="t('calendar.typeLabel')"
               class="col"
             />
             <q-select
@@ -83,28 +83,28 @@
               map-options
               outlined
               dense
-              label="Owner"
+              :label="t('calendar.ownerLabel')"
               class="col"
             />
           </div>
 
           <div class="row q-gutter-sm">
-            <q-input v-model="form.startTime" label="Start" type="datetime-local" outlined dense class="col" />
-            <q-input v-model="form.endTime" label="End" type="datetime-local" outlined dense class="col" />
+            <q-input v-model="form.startTime" :label="t('calendar.startTime')" type="datetime-local" outlined dense class="col" />
+            <q-input v-model="form.endTime" :label="t('calendar.endTime')" type="datetime-local" outlined dense class="col" />
           </div>
 
-          <q-input v-model="form.description" label="Description" type="textarea" outlined dense autogrow />
+          <q-input v-model="form.description" :label="t('calendar.description')" :placeholder="t('calendar.descPlaceholder')" type="textarea" outlined dense autogrow />
 
-          <q-toggle v-model="form.isTentative" label="Tentative" />
+          <q-toggle v-model="form.isTentative" :label="t('calendar.tentativeLabel')" />
         </q-card-section>
         <q-card-actions class="row justify-between">
           <div class="row q-gutter-sm">
-            <q-btn v-if="editingEvent" flat icon="delete" color="red" label="Delete" @click="handleDeleteEvent" />
+            <q-btn v-if="editingEvent" flat icon="delete" color="red" :label="t('common.delete')" @click="handleDeleteEvent" />
             <q-btn v-if="editingEvent" flat icon="download" label="iCal" @click="exportIcal(editingEvent)" />
           </div>
           <div class="row q-gutter-sm">
-            <q-btn flat label="Cancel" v-close-popup />
-            <q-btn color="primary" label="Save" :loading="isSaving" @click="saveEvent" />
+            <q-btn flat :label="t('common.cancel')" v-close-popup />
+            <q-btn color="primary" :label="t('common.save')" :loading="isSaving" @click="saveEvent" />
           </div>
         </q-card-actions>
       </q-card>
@@ -145,11 +145,11 @@
         </q-list>
         <q-card-section v-else class="text-center text-grey q-pa-lg">
           <q-icon name="event" size="48px" class="q-mb-sm" style="opacity: 0.2" />
-          <div>No events for this day.</div>
+          <div>{{ t('calendar.noEventsDay') }}</div>
         </q-card-section>
 
         <q-card-actions>
-          <q-btn class="full-width" color="primary" icon="add" label="Create Event" @click="openCreateFromDayView" />
+          <q-btn class="full-width" color="primary" icon="add" :label="t('calendar.createEvent')" @click="openCreateFromDayView" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -161,21 +161,23 @@ import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { useCalendarStore, type CalendarEvent } from '../stores/calendar'
 import { useBandStore } from '../stores/band'
+import { useI18n } from '../composables/useI18n'
 
 const $q = useQuasar()
 const calendarStore = useCalendarStore()
 const bandStore = useBandStore()
+const { t, tv } = useI18n()
 
-const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-const typeOptions = [
-  { label: 'Rehearsal', value: 'rehearsal' },
-  { label: 'Gig', value: 'gig' },
-  { label: 'Event', value: 'event' },
-  { label: 'Unavailability', value: 'unavailability' },
-]
+const dayHeaders = computed(() => (tv('calendar.days') as string[]) || ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'])
+const typeOptions = computed(() => [
+  { label: t('calendar.typeRehearsal'), value: 'rehearsal' },
+  { label: t('calendar.typeGig'), value: 'gig' },
+  { label: t('calendar.typeEvent'), value: 'event' },
+  { label: t('calendar.typeUnavail'), value: 'unavailability' },
+])
 
 const ownerOptions = computed(() => [
-  { label: 'Band (all)', value: null },
+  { label: t('calendar.ownerAll'), value: null },
   ...bandStore.members.filter((m) => !m.isHidden).map((u) => ({ label: u.name, value: u.id })),
 ])
 
@@ -302,17 +304,17 @@ async function saveEvent() {
       await calendarStore.createEvent(payload as any)
     }
     showEventModal.value = false
-  } catch { $q.notify({ message: 'Failed to save event', color: 'negative' }) }
+  } catch { $q.notify({ message: t('calendar.failedSave'), color: 'negative' }) }
   finally { isSaving.value = false }
 }
 
 async function handleDeleteEvent() {
   if (!editingEvent.value) return
-  $q.dialog({ title: 'Delete Event', message: `Delete "${editingEvent.value.title}"?`, cancel: true }).onOk(async () => {
+  $q.dialog({ title: t('common.delete'), message: t('calendar.confirmDelete'), cancel: true }).onOk(async () => {
     try {
       await calendarStore.deleteEvent(editingEvent.value!.id)
       showEventModal.value = false
-    } catch { $q.notify({ message: 'Failed to delete event', color: 'negative' }) }
+    } catch { $q.notify({ message: t('calendar.failedDelete'), color: 'negative' }) }
   })
 }
 

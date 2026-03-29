@@ -31,9 +31,9 @@
             <q-menu anchor="bottom right" self="top right">
               <q-list style="min-width: 260px">
                 <q-item clickable v-close-popup @click="goDashboard">
-                  <q-item-section>Dashboard</q-item-section>
+                  <q-item-section>{{ t('nav.dashboard') }}</q-item-section>
                 </q-item>
-                <q-item-label header>All Bands</q-item-label>
+                <q-item-label header>{{ t('nav.allBands') }}</q-item-label>
                 <q-item
                   v-for="band in authStore.bands"
                   :key="band.id"
@@ -43,22 +43,22 @@
                 >
                   <q-item-section>{{ band.name }}</q-item-section>
                   <q-item-section side>
-                    <q-badge v-if="activeBandId === band.id" color="primary">Active</q-badge>
+                    <q-badge v-if="activeBandId === band.id" color="primary">{{ t('nav.active') }}</q-badge>
                   </q-item-section>
                 </q-item>
 
                 <q-separator />
                 <q-item disable>
-                  <q-item-section>Role: {{ activeBandRole }}</q-item-section>
+                  <q-item-section>{{ t('admin.role') }}: {{ activeBandRole }}</q-item-section>
                 </q-item>
                 <q-item clickable v-close-popup @click="goBilling">
-                  <q-item-section>Subscriptions</q-item-section>
+                  <q-item-section>{{ t('nav.subscriptions') }}</q-item-section>
                 </q-item>
                 <q-item clickable v-close-popup @click="router.push('/impress')">
-                  <q-item-section>Impress</q-item-section>
+                  <q-item-section>{{ t('nav.impress') }}</q-item-section>
                 </q-item>
                 <q-item clickable v-close-popup @click="handleLogout">
-                  <q-item-section>Logout</q-item-section>
+                  <q-item-section>{{ t('nav.signOut') }}</q-item-section>
                 </q-item>
               </q-list>
             </q-menu>

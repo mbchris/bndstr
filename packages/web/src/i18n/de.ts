@@ -12,6 +12,10 @@ export default {
     signOut: 'Abmelden',
     signIn: 'Mitglieder einloggen',
     menu: 'Menü',
+    allBands: 'Alle Bands',
+    active: 'Aktiv',
+    subscriptions: 'Abonnements',
+    impress: 'Impressum',
   },
 
   // Common
@@ -27,6 +31,7 @@ export default {
     loading: 'Laden...',
     allRightsReserved: 'Alle Rechte vorbehalten.',
     signedIn: 'Eingeloggt',
+    title: 'Titel',
   },
 
   // Login page
@@ -44,6 +49,7 @@ export default {
     errorEmail: 'Die E-Mail konnte nicht gesendet werden.',
     errorCredentials: 'Anmeldung fehlgeschlagen. Überprüfe deine Angaben.',
     errorGeneric: 'Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut.',
+    signingIn: 'Anmeldung läuft…',
   },
 
   // Home page
@@ -121,6 +127,7 @@ export default {
     tentativeLabel: 'Vorläufig (noch nicht bestätigt)',
     more: '+ {n} weitere',
     days: ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'],
+    noEventsDay: 'Keine Termine an diesem Tag.',
   },
 
   // Voting page
@@ -162,6 +169,7 @@ export default {
     lookingUp: 'Wird gesucht...',
     lookupFailed: 'Songdetails konnten nicht gefunden werden. Bitte manuell ausfüllen.',
     exportExcel: 'Als Excel exportieren',
+    avg: 'Ø',
   },
 
   // Setlist page
@@ -193,6 +201,14 @@ export default {
     personalNotes: 'Persönliche Notizen',
     personalNotesHint: 'Nur für dich sichtbar.',
     exportExcel: 'Als Excel exportieren',
+    masterSetlist: 'Master-Setlist',
+    addSongTitle: 'Neuen Song zur Master-Setlist hinzufügen',
+    addGigSongTitle: 'Songs zur Gig-Setlist hinzufügen',
+    selectSongs: 'Songs auswählen...',
+    selectAll: 'Alle auswählen',
+    selectNone: 'Keine auswählen',
+    addToGig: 'Zum Gig hinzufügen',
+    emptyNote: 'Leere Notiz',
   },
 
   // Admin page
@@ -232,6 +248,18 @@ export default {
     hiddenHint: 'Versteckte Benutzer können nicht abstimmen und werden nicht als Bierwart eingeteilt.',
     beerCount: 'Bierzähler',
     beerAdded: 'Bier mitgebracht!',
+    bandLogo: 'Band-Logo',
+    noLogo: 'Kein Logo hochgeladen.',
+    selectLogo: 'Logo auswählen',
+    changeLogo: 'Auswahl ändern',
+    saveLogo: 'Logo speichern',
+    removeLogo: 'Logo entfernen',
+    logoHint: 'Max. 150KB. Wird auf 830×460 beschnitten und als WEBP gespeichert.',
+    logoUpdated: 'Logo aktualisiert',
+    logoRemoved: 'Logo entfernt',
+    pending: 'Ausstehend',
+    removeMember: 'Mitglied entfernen',
+    removeLogoConfirm: 'Das Band-Logo entfernen?',
   },
 
   // Language

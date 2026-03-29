@@ -4,7 +4,7 @@
       <q-card flat bordered>
         <q-card-section>
           <div class="row items-center justify-between">
-            <div class="text-h5 text-weight-bold">Voting</div>
+            <div class="text-h5 text-weight-bold">{{ t('voting.heading') }}</div>
             <div class="row q-gutter-sm">
               <q-btn flat round icon="download" @click="handleExport" />
               <q-btn round color="primary" icon="add" @click="openAddModal" />
@@ -14,7 +14,7 @@
 
         <q-card-section>
           <div class="row q-gutter-sm q-mb-md">
-            <q-input v-model="searchQuery" dense outlined placeholder="Filter songs..." class="col" clearable>
+            <q-input v-model="searchQuery" dense outlined :placeholder="t('voting.filterSongs')" class="col" clearable>
               <template #prepend><q-icon name="search" /></template>
             </q-input>
             <q-select v-model="sortBy" :options="sortOptions" emit-value map-options dense outlined style="width: 160px" />
@@ -87,7 +87,7 @@
                     />
                   </div>
                   <div class="text-caption text-grey-8 q-mt-xs text-right">
-                    Avg {{ Number(song.voteAverage || 0).toFixed(1) }} • {{ song.voteCount }} votes
+                    {{ t('voting.avg') }} {{ Number(song.voteAverage || 0).toFixed(1) }} • {{ song.voteCount }} {{ t('voting.votes') }}
                   </div>
                 </div>
               </q-item-section>
@@ -96,7 +96,7 @@
               <q-item-section side>
                 <div class="column q-gutter-xs">
                   <q-btn v-if="!song.isSetlist" flat round dense icon="arrow_forward" color="grey" size="sm" @click="openTransferModal(song)">
-                    <q-tooltip>Transfer</q-tooltip>
+                    <q-tooltip>{{ t('voting.sendToSetlist') }}</q-tooltip>
                   </q-btn>
                   <q-btn v-if="canEdit(song)" flat round dense icon="edit" size="sm" @click="openEditModal(song)" />
                   <q-btn v-if="canDelete(song)" flat round dense icon="delete" color="red" size="sm" @click="deleteSong(song)" />
@@ -105,7 +105,7 @@
             </q-item>
           </q-list>
 
-          <q-banner v-else rounded class="bg-widget-surface">No songs yet. Add one to get started!</q-banner>
+          <q-banner v-else rounded class="bg-widget-surface">{{ t('voting.noSongs') }}</q-banner>
         </q-card-section>
       </q-card>
     </div>
@@ -114,23 +114,23 @@
     <q-dialog v-model="showSongModal">
       <q-card style="min-width: 450px">
         <q-card-section class="row items-center">
-          <div class="text-h6">{{ modalSong.id ? 'Edit Song' : 'Suggest a Song' }}</div>
+          <div class="text-h6">{{ modalSong.id ? t('voting.editSong') : t('voting.suggestNew') }}</div>
           <q-space /><q-btn flat round dense icon="close" v-close-popup />
         </q-card-section>
         <q-card-section class="q-gutter-md">
           <div class="row q-gutter-sm">
-            <q-input v-model="modalSong.spotifyUrl" label="Spotify URL" outlined dense class="col" @paste="onSpotifyPaste" />
-            <q-btn color="green" icon="search" :loading="lookingUp" :disable="!modalSong.spotifyUrl" @click="lookupSpotify(true)">Lookup</q-btn>
+            <q-input v-model="modalSong.spotifyUrl" :label="t('voting.spotifyUrl')" outlined dense class="col" @paste="onSpotifyPaste" />
+            <q-btn color="green" icon="search" :loading="lookingUp" :disable="!modalSong.spotifyUrl" @click="lookupSpotify(true)">{{ t('voting.spotifyLookup') }}</q-btn>
           </div>
           <div v-if="lookupError" class="text-red text-caption">{{ lookupError }}</div>
-          <q-input v-model="modalSong.title" label="Title" outlined dense />
-          <q-input v-model="modalSong.artist" label="Artist" outlined dense />
-          <q-input v-model="modalSong.youtubeUrl" label="YouTube URL" outlined dense />
-          <q-input v-model="modalSong.notes" label="Notes" type="textarea" outlined dense autogrow />
+          <q-input v-model="modalSong.title" :label="t('voting.songTitle')" outlined dense />
+          <q-input v-model="modalSong.artist" :label="t('voting.artist')" outlined dense />
+          <q-input v-model="modalSong.youtubeUrl" :label="t('voting.youtubeUrl')" outlined dense />
+          <q-input v-model="modalSong.notes" :label="t('voting.notes')" type="textarea" outlined dense autogrow />
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn flat label="Cancel" v-close-popup />
-          <q-btn color="primary" :label="modalSong.id ? 'Update' : 'Suggest'" :loading="submitting" @click="submitSong" />
+          <q-btn flat :label="t('common.cancel')" v-close-popup />
+          <q-btn color="primary" :label="modalSong.id ? t('voting.updateBtn') : t('voting.suggestSong')" :loading="submitting" @click="submitSong" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -139,15 +139,15 @@
     <q-dialog v-model="showTransferModal">
       <q-card style="min-width: 350px">
         <q-card-section>
-          <div class="text-h6">Send to Setlist</div>
+          <div class="text-h6">{{ t('voting.sendToSetlist') }}</div>
         </q-card-section>
         <q-card-section v-if="songToTransfer">
-          <p>Transfer <strong>{{ songToTransfer.title }}</strong> by {{ songToTransfer.artist }} to the setlist?</p>
-          <p class="text-caption text-grey">Current score: {{ Number(songToTransfer.voteAverage || 0).toFixed(1) }}</p>
+          <p>{{ t('voting.confirmTransfer', { title: songToTransfer.title, artist: songToTransfer.artist }) }}</p>
+          <p class="text-caption text-grey">{{ t('voting.currentScore', { score: Number(songToTransfer.voteAverage || 0).toFixed(1) }) }}</p>
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn flat label="Cancel" v-close-popup />
-          <q-btn color="primary" label="Transfer" @click="transferToSetlist" />
+          <q-btn flat :label="t('common.cancel')" v-close-popup />
+          <q-btn color="primary" :label="t('voting.confirmBtn')" @click="transferToSetlist" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -161,21 +161,23 @@ import { useAuthStore } from '../stores/auth'
 import { useSongsStore, type Song } from '../stores/songs'
 import { useBandStore } from '../stores/band'
 import { apiJson } from '../boot/api'
+import { useI18n } from '../composables/useI18n'
 
 const $q = useQuasar()
 const authStore = useAuthStore()
 const songsStore = useSongsStore()
 const bandStore = useBandStore()
+const { t } = useI18n()
 
 const searchQuery = ref('')
 const sortBy = ref('newest')
-const sortOptions = [
-  { label: 'Most votes', value: 'votes' },
-  { label: 'Newest', value: 'newest' },
-  { label: 'Custom order', value: 'custom' },
-]
+const sortOptions = computed(() => [
+  { label: t('voting.mostVotes'), value: 'votes' },
+  { label: t('voting.newest'), value: 'newest' },
+  { label: t('voting.customOrder'), value: 'custom' },
+])
 
-const voteLabels: Record<number, string> = { 0: 'Veto', 1: 'OK', 2: 'Good', 3: 'Great' }
+const voteLabels = computed<Record<number, string>>(() => ({ 0: t('voting.veto'), 1: t('voting.ok'), 2: t('voting.good'), 3: t('voting.great') }))
 const voteColors: Record<number, string> = { 0: 'red', 1: 'orange', 2: 'primary', 3: 'green' }
 
 const isAdmin = computed(() => {
@@ -224,7 +226,7 @@ async function toggleVote(song: Song, score: number) {
     const remove = song.hasVoted === score
     await apiJson('/votes', { method: 'POST', body: JSON.stringify({ songId: song.id, score: remove ? undefined : score, remove }) })
     await songsStore.fetchSongs()
-  } catch (e: any) { $q.notify({ message: e.message || 'Vote failed', color: 'negative' }) }
+  } catch (e: any) { $q.notify({ message: e.message || t('voting.failedVote'), color: 'negative' }) }
 }
 
 async function togglePin(song: Song) {
@@ -244,7 +246,7 @@ async function moveSong(song: Song, dir: number) {
 }
 
 async function deleteSong(song: Song) {
-  $q.dialog({ title: 'Delete Song', message: `Delete "${song.title}"?`, cancel: true }).onOk(async () => {
+  $q.dialog({ title: t('common.delete'), message: t('voting.failedDelete', { title: song.title }), cancel: true }).onOk(async () => {
     await songsStore.deleteSong(song.id)
   })
 }
@@ -278,7 +280,7 @@ async function lookupSpotify(force = true) {
     const data = await apiJson<any>(`/songs/lookup?url=${encodeURIComponent(url)}`)
     if (data?.title && (force || !modalSong.value.title)) modalSong.value.title = data.title
     if (data?.artist && (force || !modalSong.value.artist)) modalSong.value.artist = data.artist
-  } catch { lookupError.value = 'Lookup failed' }
+  } catch { lookupError.value = t('voting.lookupFailed') }
   finally { lookingUp.value = false }
 }
 
@@ -294,7 +296,7 @@ async function submitSong() {
     }
     showSongModal.value = false
     await songsStore.fetchSongs()
-  } catch (e: any) { $q.notify({ message: e.message || 'Failed', color: 'negative' }) }
+  } catch (e: any) { $q.notify({ message: e.message || t('voting.failedAdd'), color: 'negative' }) }
   finally { submitting.value = false }
 }
 
@@ -310,7 +312,7 @@ async function transferToSetlist() {
     await songsStore.updateSong(songToTransfer.value.id, { isSetlist: true } as any)
     showTransferModal.value = false
     await songsStore.fetchSongs()
-  } catch { $q.notify({ message: 'Transfer failed', color: 'negative' }) }
+  } catch { $q.notify({ message: t('voting.failedTransfer'), color: 'negative' }) }
 }
 
 // Export

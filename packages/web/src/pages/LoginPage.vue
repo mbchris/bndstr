@@ -2,7 +2,7 @@
   <div class="login-page-wrap">
     <div v-if="processingToken" class="column items-center justify-center q-pa-xl">
       <q-spinner-orbit color="white" size="56px" />
-      <div class="text-grey-4 q-mt-md text-body2">Signing you in…</div>
+      <div class="text-grey-4 q-mt-md text-body2">{{ t('login.signingIn') }}</div>
     </div>
 
     <template v-else>
@@ -21,7 +21,7 @@
       color="white"
       text-color="dark"
       icon="img:https://www.google.com/favicon.ico"
-      label="Continue with Google"
+      :label="t('login.google')"
       class="full-width q-mb-md"
       unelevated
       size="md"
@@ -33,7 +33,7 @@
       color="dark"
       text-color="white"
       icon="img:https://github.com/favicon.ico"
-      label="Continue with GitHub"
+      :label="t('login.github')"
       class="full-width q-btn-github"
       outline
       size="md"
@@ -145,6 +145,9 @@ import { Capacitor } from '@capacitor/core'
 import { useRoute, useRouter } from 'vue-router'
 import { authClient } from '../boot/auth'
 import { useAuthStore } from '../stores/auth'
+import { useI18n } from '../composables/useI18n'
+
+const { t } = useI18n()
 
 const processingToken = ref(!!((new URLSearchParams(window.location.search)).get('token') || window.location.hash.includes('token=')))
 const loadingGoogle = ref(false)

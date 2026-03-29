@@ -5,7 +5,7 @@
         <q-card-section>
           <div class="row items-center justify-between">
             <div class="row items-center q-gutter-sm">
-              <div class="text-h5 text-weight-bold">Setlist</div>
+              <div class="text-h5 text-weight-bold">{{ t('setlist.heading') }}</div>
               <q-select v-model="selectedGigId" :options="gigOptions" emit-value map-options dense outlined style="width: 200px" />
             </div>
             <div class="row q-gutter-sm">
@@ -19,7 +19,7 @@
 
         <q-card-section>
           <div class="row q-gutter-sm q-mb-md">
-            <q-input v-model="searchQuery" dense outlined placeholder="Filter songs..." class="col" clearable>
+            <q-input v-model="searchQuery" dense outlined :placeholder="t('setlist.filterTitle')" class="col" clearable>
               <template #prepend><q-icon name="search" /></template>
             </q-input>
             <q-select v-model="sortBy" :options="sortOptions" emit-value map-options dense outlined style="width: 160px" />
@@ -67,8 +67,8 @@
                     <q-icon v-if="item.notes" name="info" color="grey" size="xs" class="cursor-pointer q-ml-xs">
                       <q-tooltip>{{ item.notes }}</q-tooltip>
                     </q-icon>
-                    <q-icon v-if="getPersonalNote(item.id)" name="person" color="primary" size="xs" class="cursor-pointer q-ml-xs" @click="showNote('Personal Notes: ' + item.title, getPersonalNote(item.id))">
-                      <q-tooltip>Personal note</q-tooltip>
+                    <q-icon v-if="getPersonalNote(item.id)" name="person" color="primary" size="xs" class="cursor-pointer q-ml-xs" @click="showNote(t('setlist.personalNotes') + ': ' + item.title, getPersonalNote(item.id))">
+                      <q-tooltip>{{ t('setlist.personalNotes') }}</q-tooltip>
                     </q-icon>
                   </q-item-label>
                   <q-item-label caption>{{ item.artist }}</q-item-label>
@@ -105,7 +105,7 @@
                 <div class="row q-gutter-xs">
                   <q-btn flat round dense icon="edit" size="sm" @click="openEditModal(item)" />
                   <q-btn v-if="item.type === 'song'" flat round dense icon="arrow_back" color="grey" size="sm" @click="removeFromSetlist(item)">
-                    <q-tooltip>Move to Voting</q-tooltip>
+                    <q-tooltip>{{ t('setlist.moveToVoting') }}</q-tooltip>
                   </q-btn>
                   <q-btn v-else flat round dense icon="close" color="red" size="sm" @click="removeFromSetlist(item)" />
                 </div>
@@ -113,7 +113,7 @@
             </q-item>
           </q-list>
 
-          <q-banner v-else rounded class="bg-widget-surface">No items in the setlist yet.</q-banner>
+          <q-banner v-else rounded class="bg-widget-surface">{{ t('setlist.noItems') }}</q-banner>
         </q-card-section>
       </q-card>
     </div>
@@ -122,23 +122,23 @@
     <q-dialog v-model="showAddSongModal">
       <q-card style="min-width: 450px">
         <q-card-section class="row items-center">
-          <div class="text-h6">Add New Song to Master Setlist</div>
+          <div class="text-h6">{{ t('setlist.addSongTitle') }}</div>
           <q-space /><q-btn flat round dense icon="close" v-close-popup />
         </q-card-section>
         <q-card-section class="q-gutter-md">
           <div class="row q-gutter-sm">
-            <q-input v-model="addSongForm.spotifyUrl" label="Spotify URL" outlined dense class="col" @paste="onAddSpotifyPaste" />
-            <q-btn color="green" icon="search" :loading="addSongLookingUp" :disable="!addSongForm.spotifyUrl" @click="lookupSpotifyForAdd(true)">Lookup</q-btn>
+            <q-input v-model="addSongForm.spotifyUrl" :label="t('voting.spotifyUrl')" outlined dense class="col" @paste="onAddSpotifyPaste" />
+            <q-btn color="green" icon="search" :loading="addSongLookingUp" :disable="!addSongForm.spotifyUrl" @click="lookupSpotifyForAdd(true)">{{ t('voting.spotifyLookup') }}</q-btn>
           </div>
           <div v-if="addSongLookupError" class="text-red text-caption">{{ addSongLookupError }}</div>
-          <q-input v-model="addSongForm.title" label="Title" outlined dense autofocus />
-          <q-input v-model="addSongForm.artist" label="Artist" outlined dense />
-          <q-input v-model="addSongForm.youtubeUrl" label="YouTube URL" outlined dense />
-          <q-input v-model="addSongForm.notes" label="Notes" type="textarea" outlined dense autogrow />
+          <q-input v-model="addSongForm.title" :label="t('voting.songTitle')" outlined dense autofocus />
+          <q-input v-model="addSongForm.artist" :label="t('voting.artist')" outlined dense />
+          <q-input v-model="addSongForm.youtubeUrl" :label="t('voting.youtubeUrl')" outlined dense />
+          <q-input v-model="addSongForm.notes" :label="t('voting.notes')" type="textarea" outlined dense autogrow />
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn flat label="Cancel" v-close-popup />
-          <q-btn color="primary" label="Add Song" :loading="isSaving" @click="submitAddSong" />
+          <q-btn flat :label="t('common.cancel')" v-close-popup />
+          <q-btn color="primary" :label="t('common.add')" :loading="isSaving" @click="submitAddSong" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -147,7 +147,7 @@
     <q-dialog v-model="showAddGigSongModal">
       <q-card style="min-width: 450px">
         <q-card-section class="row items-center">
-          <div class="text-h6">Add Master Songs to Gig Setlist</div>
+          <div class="text-h6">{{ t('setlist.addGigSongTitle') }}</div>
           <q-space /><q-btn flat round dense icon="close" v-close-popup />
         </q-card-section>
         <q-card-section>
@@ -160,18 +160,18 @@
             use-chips
             outlined
             dense
-            label="Select songs..."
+            :label="t('setlist.selectSongs')"
             option-label="label"
             option-value="value"
           />
           <div class="row q-gutter-sm q-mt-sm">
-            <q-btn flat dense size="sm" label="Select All" @click="selectedMasterSongIds = masterSongOptions.map(o => o.value)" />
-            <q-btn flat dense size="sm" label="Select None" @click="selectedMasterSongIds = []" />
+            <q-btn flat dense size="sm" :label="t('setlist.selectAll')" @click="selectedMasterSongIds = masterSongOptions.map(o => o.value)" />
+            <q-btn flat dense size="sm" :label="t('setlist.selectNone')" @click="selectedMasterSongIds = []" />
           </div>
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn flat label="Cancel" v-close-popup />
-          <q-btn color="primary" label="Add to Gig" :loading="isSaving" :disable="!selectedMasterSongIds.length" @click="submitAddGigSong" />
+          <q-btn flat :label="t('common.cancel')" v-close-popup />
+          <q-btn color="primary" :label="t('setlist.addToGig')" :loading="isSaving" :disable="!selectedMasterSongIds.length" @click="submitAddGigSong" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -185,10 +185,10 @@
         </q-card-section>
         <q-card-section>
           <Markdown v-if="noteModalContent" :content="noteModalContent" />
-          <div v-else class="text-grey text-italic text-center q-pa-lg">Empty note</div>
+          <div v-else class="text-grey text-italic text-center q-pa-lg">{{ t('setlist.emptyNote') }}</div>
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn flat label="Close" v-close-popup />
+          <q-btn flat :label="t('common.close')" v-close-popup />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -197,31 +197,31 @@
     <q-dialog v-model="showEditModal">
       <q-card v-if="editingItem" style="min-width: 450px">
         <q-card-section class="row items-center">
-          <div class="text-h6">Edit: {{ editingItem.title }}</div>
+          <div class="text-h6">{{ t('setlist.editSong') }}: {{ editingItem.title }}</div>
           <q-space /><q-btn flat round dense icon="close" v-close-popup />
         </q-card-section>
         <q-card-section class="q-gutter-md">
           <template v-if="editingItem.type === 'song'">
             <div class="row q-gutter-sm">
-              <q-input v-model="editingItem.spotifyUrl" label="Spotify URL" outlined dense class="col" @paste="onSpotifyPaste" />
-              <q-btn color="green" icon="search" :loading="isLookingUp" :disable="!editingItem.spotifyUrl" @click="lookupSpotify(true)">Lookup</q-btn>
+              <q-input v-model="editingItem.spotifyUrl" :label="t('voting.spotifyUrl')" outlined dense class="col" @paste="onSpotifyPaste" />
+              <q-btn color="green" icon="search" :loading="isLookingUp" :disable="!editingItem.spotifyUrl" @click="lookupSpotify(true)">{{ t('voting.spotifyLookup') }}</q-btn>
             </div>
             <div v-if="lookupError" class="text-red text-caption">{{ lookupError }}</div>
-            <q-input v-model="editingItem.title" label="Title" outlined dense />
-            <q-input v-model="editingItem.artist" label="Artist" outlined dense />
-            <q-input v-model="editingItem.youtubeUrl" label="YouTube URL" outlined dense />
+            <q-input v-model="editingItem.title" :label="t('voting.songTitle')" outlined dense />
+            <q-input v-model="editingItem.artist" :label="t('voting.artist')" outlined dense />
+            <q-input v-model="editingItem.youtubeUrl" :label="t('voting.youtubeUrl')" outlined dense />
             <div class="row items-center q-gutter-md">
-              <span class="text-caption">Pitch Shift (Semi-tones)</span>
+              <span class="text-caption">{{ t('setlist.pitchShift') }}</span>
               <q-slider v-model="editingItem.pitch" :min="-5" :max="5" :step="1" snap label class="col" />
               <q-badge color="grey-8" class="text-body2">{{ editingItem.pitch > 0 ? '+' : '' }}{{ editingItem.pitch }}</q-badge>
             </div>
           </template>
-          <q-input v-model="editingItem.notes" label="Notes" type="textarea" outlined dense autogrow />
-          <q-input v-model="editingItemPersonalNote" label="Personal Notes (only visible to you)" type="textarea" outlined dense autogrow />
+          <q-input v-model="editingItem.notes" :label="t('setlist.notes')" type="textarea" outlined dense autogrow />
+          <q-input v-model="editingItemPersonalNote" :label="t('setlist.personalNotes')" :hint="t('setlist.personalNotesHint')" type="textarea" outlined dense autogrow />
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn flat label="Cancel" v-close-popup />
-          <q-btn color="primary" label="Save" :loading="isSaving" @click="saveItemEdit" />
+          <q-btn flat :label="t('common.cancel')" v-close-popup />
+          <q-btn color="primary" :label="t('common.save')" :loading="isSaving" @click="saveItemEdit" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -230,15 +230,15 @@
     <q-dialog v-model="showSpecialModal">
       <q-card v-if="specialElementForm" style="min-width: 400px">
         <q-card-section>
-          <div class="text-h6">{{ specialElementForm.type === 'pause' ? 'Add Pause' : 'Change Tuning' }}</div>
+          <div class="text-h6">{{ specialElementForm.type === 'pause' ? t('setlist.addPause') : t('setlist.changeTuning') }}</div>
         </q-card-section>
         <q-card-section class="q-gutter-md">
-          <q-input v-model="specialElementForm.title" label="Title" outlined dense autofocus />
-          <q-input v-model="specialElementForm.notes" label="Notes" type="textarea" outlined dense autogrow />
+          <q-input v-model="specialElementForm.title" :label="t('common.title')" outlined dense autofocus />
+          <q-input v-model="specialElementForm.notes" :label="t('voting.notes')" type="textarea" outlined dense autogrow />
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn flat label="Cancel" v-close-popup />
-          <q-btn color="primary" label="Add" :loading="isSaving" @click="submitSpecialElement" />
+          <q-btn flat :label="t('common.cancel')" v-close-popup />
+          <q-btn color="primary" :label="t('common.add')" :loading="isSaving" @click="submitSpecialElement" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -251,17 +251,19 @@ import { useQuasar } from 'quasar'
 import { useSongsStore, type Song } from '../stores/songs'
 import { apiJson } from '../boot/api'
 import Markdown from '../components/Markdown.vue'
+import { useI18n } from '../composables/useI18n'
 
 const $q = useQuasar()
 const songsStore = useSongsStore()
+const { t } = useI18n()
 
 const searchQuery = ref('')
 const sortBy = ref('custom')
-const sortOptions = [
-  { label: 'Custom order', value: 'custom' },
-  { label: 'By title', value: 'title' },
-  { label: 'By artist', value: 'artist' },
-]
+const sortOptions = computed(() => [
+  { label: t('setlist.orderCustom'), value: 'custom' },
+  { label: t('setlist.orderTitle'), value: 'title' },
+  { label: t('setlist.orderArtist'), value: 'artist' },
+])
 
 // Gig selection
 const selectedGigId = ref<number | null>(null)
@@ -270,7 +272,7 @@ const gigSongs = ref<Song[]>([])
 const personalNotes = ref<any[]>([])
 
 const gigOptions = computed(() => [
-  { label: 'Master Setlist', value: null },
+  { label: t('setlist.masterSetlist'), value: null },
   ...gigs.value.map((g) => {
     let dateStr = ''
     if (g.startTime) {
@@ -362,7 +364,7 @@ async function moveItem(index: number, direction: number) {
       await songsStore.reorderSongs(updates)
     }
   } catch {
-    $q.notify({ message: 'Reorder failed', color: 'negative' })
+    $q.notify({ message: t('setlist.failedReorder'), color: 'negative' })
     await refreshAll()
   }
 }
@@ -376,8 +378,8 @@ async function togglePin(item: Song) {
 
 async function removeFromSetlist(item: Song) {
   $q.dialog({
-    title: 'Remove',
-    message: item.type !== 'song' ? `Delete "${item.title}"?` : `Move "${item.title}" back to voting?`,
+    title: t('common.delete'),
+    message: t('setlist.removeConfirm', { title: item.title }),
     cancel: true,
   }).onOk(async () => {
     try {
@@ -391,7 +393,7 @@ async function removeFromSetlist(item: Song) {
       }
       await refreshAll()
     } catch {
-      $q.notify({ message: 'Failed to remove', color: 'negative' })
+      $q.notify({ message: t('setlist.failedRemove'), color: 'negative' })
     }
   })
 }
@@ -438,7 +440,7 @@ async function submitAddSong() {
     } as any)
     showAddSongModal.value = false
     await refreshAll()
-  } catch { $q.notify({ message: 'Failed to add song', color: 'negative' }) }
+  } catch { $q.notify({ message: t('setlist.failedAdd'), color: 'negative' }) }
   finally { isSaving.value = false }
 }
 
@@ -453,7 +455,7 @@ async function lookupSpotifyForAdd(force = true) {
     if (data?.title && (force || !addSongForm.value.title)) addSongForm.value.title = data.title
     if (data?.artist && (force || !addSongForm.value.artist)) addSongForm.value.artist = data.artist
   } catch {
-    addSongLookupError.value = 'Lookup failed'
+    addSongLookupError.value = t('voting.lookupFailed')
   } finally {
     addSongLookingUp.value = false
   }
@@ -479,7 +481,7 @@ async function submitAddGigSong() {
     showAddGigSongModal.value = false
     selectedMasterSongIds.value = []
     if (selectedGigId.value) await fetchGigSongs(selectedGigId.value)
-  } catch (e: any) { $q.notify({ message: 'Failed to add songs to gig', color: 'negative' }) }
+  } catch (e: any) { $q.notify({ message: t('setlist.failedAdd'), color: 'negative' }) }
   finally { isSaving.value = false }
 }
 
@@ -488,7 +490,7 @@ const showSpecialModal = ref(false)
 const specialElementForm = ref<{ type: 'pause' | 'tuning'; title: string; notes: string } | null>(null)
 
 function openSpecialModal(type: 'pause' | 'tuning') {
-  specialElementForm.value = { type, title: type === 'pause' ? 'Break / Pause' : 'Tuning Change', notes: '' }
+  specialElementForm.value = { type, title: type === 'pause' ? t('setlist.breakPause') : t('setlist.tuningChange'), notes: '' }
   showSpecialModal.value = true
 }
 
@@ -506,7 +508,7 @@ async function submitSpecialElement() {
     } as any)
     showSpecialModal.value = false
     await refreshAll()
-  } catch { $q.notify({ message: 'Failed to add ' + specialElementForm.value.type, color: 'negative' }) }
+  } catch { $q.notify({ message: t('setlist.failedAdd'), color: 'negative' }) }
   finally { isSaving.value = false }
 }
 
@@ -534,7 +536,7 @@ async function lookupSpotify(force = true) {
     const data = await apiJson<any>(`/songs/lookup?url=${encodeURIComponent(url)}`)
     if (data?.title && (force || !editingItem.value.title)) editingItem.value.title = data.title
     if (data?.artist && (force || !editingItem.value.artist)) editingItem.value.artist = data.artist
-  } catch { lookupError.value = 'Lookup failed' }
+  } catch { lookupError.value = t('voting.lookupFailed') }
   finally { isLookingUp.value = false }
 }
 
@@ -560,7 +562,7 @@ async function saveItemEdit() {
 
     showEditModal.value = false
     await refreshAll()
-  } catch { $q.notify({ message: 'Failed to save', color: 'negative' }) }
+  } catch { $q.notify({ message: t('setlist.failedSave'), color: 'negative' }) }
   finally { isSaving.value = false }
 }
 

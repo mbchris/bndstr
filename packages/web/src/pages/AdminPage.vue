@@ -3,7 +3,7 @@
     <div style="max-width: 1200px; margin: 0 auto">
       <div class="row items-center q-gutter-sm q-mb-lg">
         <q-icon name="settings" size="32px" color="primary" />
-        <div class="text-h5 text-weight-bold">Admin</div>
+        <div class="text-h5 text-weight-bold">{{ t('admin.heading') }}</div>
       </div>
 
       <div class="row q-gutter-lg">
@@ -12,9 +12,9 @@
           <q-card flat bordered>
             <q-card-section>
               <div class="row items-center justify-between">
-                <div class="text-subtitle1 text-weight-bold">Band Members</div>
+                <div class="text-subtitle1 text-weight-bold">{{ t('admin.bandMembers') }}</div>
                 <q-btn size="sm" color="primary" round dense icon="person_add" @click="showAddModal = true">
-                  <q-tooltip>Add Member</q-tooltip>
+                  <q-tooltip>{{ t('admin.addMember') }}</q-tooltip>
                 </q-btn>
               </div>
             </q-card-section>
@@ -31,7 +31,7 @@
             >
               <template #body-cell-isHidden="props">
                 <q-td :props="props">
-                  <q-badge v-if="props.row.isHidden" color="grey">Hidden</q-badge>
+                  <q-badge v-if="props.row.isHidden" color="grey">{{ t('admin.isHidden') }}</q-badge>
                   <span v-else>-</span>
                 </q-td>
               </template>
@@ -52,7 +52,7 @@
           <!-- Band Logo -->
           <q-card flat bordered class="q-mb-md">
             <q-card-section>
-              <div class="text-subtitle1 text-weight-bold">Band Logo</div>
+              <div class="text-subtitle1 text-weight-bold">{{ t('admin.bandLogo') }}</div>
             </q-card-section>
             <q-card-section class="q-gutter-sm">
               <q-img
@@ -61,7 +61,7 @@
                 style="width: 100%; max-width: 420px; aspect-ratio: 830 / 460; border-radius: 10px"
                 fit="contain"
               />
-              <div v-else class="text-caption text-grey">No custom logo uploaded.</div>
+              <div v-else class="text-caption text-grey">{{ t('admin.noLogo') }}</div>
 
               <div class="row q-col-gutter-sm">
                 <div class="col-12 col-sm-auto">
@@ -73,7 +73,7 @@
                     :loading="logoProcessing"
                     @click="logoInputRef?.click()"
                   >
-                    <q-tooltip>{{ pendingLogoDataUrl ? 'Change selection' : 'Select logo' }}</q-tooltip>
+                    <q-tooltip>{{ pendingLogoDataUrl ? t('admin.changeLogo') : t('admin.selectLogo') }}</q-tooltip>
                   </q-btn>
                 </div>
                 <div class="col-12 col-sm-auto" v-if="pendingLogoDataUrl">
@@ -85,7 +85,7 @@
                     :loading="logoUploading"
                     @click="uploadLogo"
                   >
-                    <q-tooltip>Save logo</q-tooltip>
+                    <q-tooltip>{{ t('admin.saveLogo') }}</q-tooltip>
                   </q-btn>
                 </div>
                 <div class="col-12 col-sm-auto" v-if="authStore.activeBand?.logo">
@@ -98,7 +98,7 @@
                     :loading="logoUploading"
                     @click="removeLogo"
                   >
-                    <q-tooltip>Remove logo</q-tooltip>
+                    <q-tooltip>{{ t('admin.removeLogo') }}</q-tooltip>
                   </q-btn>
                 </div>
               </div>
@@ -112,7 +112,7 @@
                 @change="handleLogoSelected"
               />
               <div class="text-caption text-grey">
-                Max 150KB. Uploaded logos are center-cropped to 830x460 and converted to WEBP.
+                {{ t('admin.logoHint') }}
               </div>
             </q-card-section>
           </q-card>
@@ -120,23 +120,23 @@
           <!-- System Status -->
           <q-card flat bordered>
             <q-card-section>
-              <div class="text-subtitle1 text-weight-bold">System Status</div>
+              <div class="text-subtitle1 text-weight-bold">{{ t('admin.systemStatus') }}</div>
             </q-card-section>
             <q-list dense separator>
               <q-item>
-                <q-item-section>Database</q-item-section>
-                <q-item-section side><q-badge color="green">Connected</q-badge></q-item-section>
+                <q-item-section>{{ t('admin.database') }}</q-item-section>
+                <q-item-section side><q-badge color="green">{{ t('admin.connected') }}</q-badge></q-item-section>
               </q-item>
               <q-item>
                 <q-item-section>OIDC Google</q-item-section>
                 <q-item-section side>
-                  <q-badge :color="sysStatus?.google ? 'green' : 'grey'">{{ sysStatus?.google ? 'Connected' : 'Pending' }}</q-badge>
+                  <q-badge :color="sysStatus?.google ? 'green' : 'grey'">{{ sysStatus?.google ? t('admin.connected') : t('admin.pending') }}</q-badge>
                 </q-item-section>
               </q-item>
               <q-item>
                 <q-item-section>OIDC GitHub</q-item-section>
                 <q-item-section side>
-                  <q-badge :color="sysStatus?.github ? 'green' : 'grey'">{{ sysStatus?.github ? 'Connected' : 'Pending' }}</q-badge>
+                  <q-badge :color="sysStatus?.github ? 'green' : 'grey'">{{ sysStatus?.github ? t('admin.connected') : t('admin.pending') }}</q-badge>
                 </q-item-section>
               </q-item>
             </q-list>
@@ -145,26 +145,26 @@
           <!-- DB Management -->
           <q-card flat bordered class="q-mt-md">
             <q-card-section>
-              <div class="text-subtitle1 text-weight-bold">Database Management</div>
+              <div class="text-subtitle1 text-weight-bold">{{ t('admin.dbManagement') }}</div>
             </q-card-section>
             <q-card-section class="q-gutter-sm">
-              <q-btn class="full-width" color="grey-8" icon="download" @click="exportDb">Download Backup</q-btn>
-              <q-btn class="full-width" color="orange" outline icon="upload" :loading="isImporting" @click="importInputRef?.click()">Import SQL</q-btn>
+              <q-btn class="full-width" color="grey-8" icon="download" @click="exportDb">{{ t('admin.downloadBackup') }}</q-btn>
+              <q-btn class="full-width" color="orange" outline icon="upload" :loading="isImporting" @click="importInputRef?.click()">{{ t('admin.importSql') }}</q-btn>
               <input ref="importInputRef" type="file" accept=".sql" class="hidden" style="display:none" @change="handleImport" />
-              <div class="text-caption text-grey text-center">Warning: importing will overwrite existing data.</div>
+              <div class="text-caption text-grey text-center">{{ t('admin.sqlWarning') }}</div>
             </q-card-section>
           </q-card>
 
           <!-- Calendar Management -->
           <q-card flat bordered class="q-mt-md">
             <q-card-section>
-              <div class="text-subtitle1 text-weight-bold">Calendar Management</div>
+              <div class="text-subtitle1 text-weight-bold">{{ t('admin.calendarMgmt') }}</div>
             </q-card-section>
             <q-card-section class="q-gutter-sm">
-              <q-btn class="full-width" color="grey-8" icon="download" @click="exportCalendar">Export JSON</q-btn>
-              <q-btn class="full-width" color="blue" outline icon="upload" :loading="isCalendarImporting" @click="calendarImportRef?.click()">Import JSON</q-btn>
+              <q-btn class="full-width" color="grey-8" icon="download" @click="exportCalendar">{{ t('admin.exportJson') }}</q-btn>
+              <q-btn class="full-width" color="blue" outline icon="upload" :loading="isCalendarImporting" @click="calendarImportRef?.click()">{{ t('admin.importJson') }}</q-btn>
               <input ref="calendarImportRef" type="file" accept=".json" class="hidden" style="display:none" @change="handleCalendarImport" />
-              <div class="text-caption text-grey text-center">Import calendar events from JSON.</div>
+              <div class="text-caption text-grey text-center">{{ t('admin.jsonHint') }}</div>
             </q-card-section>
           </q-card>
         </div>
@@ -175,19 +175,19 @@
     <q-dialog v-model="showAddModal">
       <q-card style="min-width: 400px">
         <q-card-section class="row items-center">
-          <div class="text-h6">Add Member</div>
+          <div class="text-h6">{{ t('admin.addMember') }}</div>
           <q-space /><q-btn flat round dense icon="close" v-close-popup />
         </q-card-section>
         <q-card-section class="q-gutter-md">
-          <q-input v-model="newMember.name" label="Name" outlined dense autofocus />
-          <q-input v-model="newMember.email" label="Email" type="email" outlined dense />
-          <q-select v-model="newMember.role" :options="['member', 'admin']" label="Role" outlined dense />
-          <q-toggle v-model="newMember.isHidden" label="Hidden (excluded from voting)" />
-          <q-input v-model.number="newMember.beerCount" label="Beer Count" type="number" outlined dense />
+          <q-input v-model="newMember.name" :label="t('admin.name')" outlined dense autofocus />
+          <q-input v-model="newMember.email" :label="t('admin.emailWhitelist')" type="email" outlined dense />
+          <q-select v-model="newMember.role" :options="['member', 'admin']" :label="t('admin.role')" outlined dense />
+          <q-toggle v-model="newMember.isHidden" :label="t('admin.isHidden')" />
+          <q-input v-model.number="newMember.beerCount" :label="t('admin.beerCount')" type="number" outlined dense />
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn flat label="Cancel" v-close-popup />
-          <q-btn color="primary" label="Add" :loading="isSubmitting" @click="addMember" />
+          <q-btn flat :label="t('common.cancel')" v-close-popup />
+          <q-btn color="primary" :label="t('common.add')" :loading="isSubmitting" @click="addMember" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -196,19 +196,19 @@
     <q-dialog v-model="showEditModal">
       <q-card v-if="editingMember" style="min-width: 400px">
         <q-card-section class="row items-center">
-          <div class="text-h6">Edit Member</div>
+          <div class="text-h6">{{ t('admin.editMember') }}</div>
           <q-space /><q-btn flat round dense icon="close" v-close-popup />
         </q-card-section>
         <q-card-section class="q-gutter-md">
-          <q-input v-model="editingMember.name" label="Name" outlined dense />
-          <q-input v-model="editingMember.email" label="Email" type="email" outlined dense />
-          <q-select v-model="editingMember.role" :options="['member', 'admin']" label="Role" outlined dense />
-          <q-toggle v-model="editingMember.isHidden" label="Hidden" />
-          <q-input v-model.number="editingMember.beerCount" label="Beer Count" type="number" outlined dense />
+          <q-input v-model="editingMember.name" :label="t('admin.name')" outlined dense />
+          <q-input v-model="editingMember.email" :label="t('admin.emailWhitelist')" type="email" outlined dense />
+          <q-select v-model="editingMember.role" :options="['member', 'admin']" :label="t('admin.role')" outlined dense />
+          <q-toggle v-model="editingMember.isHidden" :label="t('admin.isHidden')" />
+          <q-input v-model.number="editingMember.beerCount" :label="t('admin.beerCount')" type="number" outlined dense />
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn flat label="Cancel" v-close-popup />
-          <q-btn color="primary" label="Save" :loading="isSubmitting" @click="updateMember" />
+          <q-btn flat :label="t('common.cancel')" v-close-popup />
+          <q-btn color="primary" :label="t('common.save')" :loading="isSubmitting" @click="updateMember" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -221,19 +221,21 @@ import { useQuasar, type QTableColumn } from 'quasar'
 import { useBandStore } from '../stores/band'
 import { useAuthStore } from '../stores/auth'
 import { apiJson, api } from '../boot/api'
+import { useI18n } from '../composables/useI18n'
 
 const $q = useQuasar()
 const bandStore = useBandStore()
 const authStore = useAuthStore()
+const { t } = useI18n()
 
-const columns: QTableColumn[] = [
-  { name: 'name', label: 'Name', field: 'name', align: 'left' },
-  { name: 'email', label: 'Email', field: 'email', align: 'left' },
-  { name: 'role', label: 'Role', field: 'role', align: 'left' },
-  { name: 'isHidden', label: 'Hidden', field: 'isHidden', align: 'center' },
-  { name: 'beerCount', label: 'Beers', field: 'beerCount', align: 'center' },
+const columns = computed<QTableColumn[]>(() => [
+  { name: 'name', label: t('admin.name'), field: 'name', align: 'left' },
+  { name: 'email', label: t('admin.emailWhitelist'), field: 'email', align: 'left' },
+  { name: 'role', label: t('admin.role'), field: 'role', align: 'left' },
+  { name: 'isHidden', label: t('admin.isHidden'), field: 'isHidden', align: 'center' },
+  { name: 'beerCount', label: t('admin.beerCount'), field: 'beerCount', align: 'center' },
   { name: 'actions', label: '', field: 'actions', align: 'right' },
-]
+])
 
 const visibleColumns = computed(() => (
   $q.screen.lt.md ? ['name', 'role', 'actions'] : ['name', 'email', 'role', 'isHidden', 'beerCount', 'actions']
@@ -264,7 +266,7 @@ async function addMember() {
     showAddModal.value = false
     newMember.value = { name: '', email: '', role: 'member', isHidden: false, beerCount: 0 }
     await bandStore.fetchMembers()
-  } catch (e: any) { $q.notify({ message: e.message || 'Failed to add member', color: 'negative' }) }
+  } catch (e: any) { $q.notify({ message: e.message || t('admin.failedAdd'), color: 'negative' }) }
   finally { isSubmitting.value = false }
 }
 
@@ -288,17 +290,17 @@ async function updateMember() {
     })
     showEditModal.value = false
     await bandStore.fetchMembers()
-  } catch (e: any) { $q.notify({ message: e.message || 'Failed to update', color: 'negative' }) }
+  } catch (e: any) { $q.notify({ message: e.message || t('admin.failedUpdate'), color: 'negative' }) }
   finally { isSubmitting.value = false }
 }
 
 async function removeMember(id: string) {
-  $q.dialog({ title: 'Remove Member', message: 'Are you sure you want to remove this member?', cancel: true }).onOk(async () => {
+  $q.dialog({ title: t('admin.removeMember'), message: t('admin.removeConfirm'), cancel: true }).onOk(async () => {
     removingId.value = id
     try {
       await apiJson(`/users/${id}`, { method: 'DELETE' })
       await bandStore.fetchMembers()
-    } catch (e: any) { $q.notify({ message: e.message || 'Failed to remove', color: 'negative' }) }
+    } catch (e: any) { $q.notify({ message: e.message || t('admin.failedRemove'), color: 'negative' }) }
     finally { removingId.value = null }
   })
 }
@@ -397,24 +399,24 @@ async function uploadLogo() {
     })
     authStore.setActiveBandLogo(result.logo ?? null)
     pendingLogoDataUrl.value = null
-    $q.notify({ message: 'Logo updated', color: 'positive' })
+    $q.notify({ message: t('admin.logoUpdated'), color: 'positive' })
   } catch (e: any) {
-    $q.notify({ message: e.message || 'Failed to upload logo', color: 'negative' })
+    $q.notify({ message: e.message || t('admin.failedImport'), color: 'negative' })
   } finally {
     logoUploading.value = false
   }
 }
 
 async function removeLogo() {
-  $q.dialog({ title: 'Remove Logo', message: 'Remove the custom band logo?', cancel: true }).onOk(async () => {
+  $q.dialog({ title: t('admin.removeLogo'), message: t('admin.removeLogoConfirm'), cancel: true }).onOk(async () => {
     logoUploading.value = true
     try {
       await apiJson('/admin/logo', { method: 'DELETE' })
       authStore.setActiveBandLogo(null)
       pendingLogoDataUrl.value = null
-      $q.notify({ message: 'Logo removed', color: 'positive' })
+      $q.notify({ message: t('admin.logoRemoved'), color: 'positive' })
     } catch (e: any) {
-      $q.notify({ message: e.message || 'Failed to remove logo', color: 'negative' })
+      $q.notify({ message: e.message || t('admin.failedRemove'), color: 'negative' })
     } finally {
       logoUploading.value = false
     }
@@ -456,16 +458,16 @@ async function handleImport(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0]
   if (!file) return
 
-  $q.dialog({ title: 'Import Database', message: 'This will overwrite existing data. Are you sure?', cancel: true }).onOk(async () => {
+  $q.dialog({ title: t('admin.importSql'), message: t('admin.importWarningConfirm'), cancel: true }).onOk(async () => {
     isImporting.value = true
     const formData = new FormData()
     formData.append('file', file)
     try {
       const res = await api('/admin/db/import', { method: 'POST', body: formData })
-      if (!res.ok) throw new Error('Import failed')
-      $q.notify({ message: 'Import successful', color: 'positive' })
+      if (!res.ok) throw new Error(t('admin.failedImport'))
+      $q.notify({ message: t('admin.importSuccess'), color: 'positive' })
       await bandStore.fetchMembers()
-    } catch (e: any) { $q.notify({ message: e.message || 'Import failed', color: 'negative' }) }
+    } catch (e: any) { $q.notify({ message: e.message || t('admin.failedImport'), color: 'negative' }) }
     finally {
       isImporting.value = false
       ;(event.target as HTMLInputElement).value = ''
@@ -489,8 +491,8 @@ async function handleCalendarImport(event: Event) {
     const res = await api('/admin/calendar/import', { method: 'POST', body: formData })
     if (!res.ok) throw new Error('Import failed')
     const data = await res.json()
-    $q.notify({ message: `Imported ${data.count || 0} events`, color: 'positive' })
-  } catch (e: any) { $q.notify({ message: e.message || 'Calendar import failed', color: 'negative' }) }
+    $q.notify({ message: t('admin.importJsonSuccess', { count: data.count || 0 }), color: 'positive' })
+  } catch (e: any) { $q.notify({ message: e.message || t('admin.failedJsonImport'), color: 'negative' }) }
   finally {
     isCalendarImporting.value = false
     ;(event.target as HTMLInputElement).value = ''
