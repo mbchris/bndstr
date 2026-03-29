@@ -133,7 +133,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { Capacitor } from '@capacitor/core'
 import { useRoute, useRouter } from 'vue-router'
 import { authClient } from '../boot/auth'
@@ -482,6 +482,28 @@ onMounted(async () => {
     await router.replace({ path: redirectPath })
   }
 })
+
+// Handle token arriving via deep link while the page is already mounted.
+// Vue Router does not remount the component for same-path navigations (only
+// query params change), so onMounted won't fire again.
+watch(
+  () => route.query.token,
+  async (newToken) => {
+    if (typeof newToken !== 'string' || !newToken) return
+
+    authStore.setToken(newToken)
+    await authStore.loadSession()
+
+    const query = { ...route.query }
+    delete query.token
+    delete query.mobileAuth
+    await router.replace({ path: '/login', query })
+
+    if (authStore.isAuthenticated) {
+      await router.replace({ path: sanitizeRedirectPath(route.query.redirect) })
+    }
+  },
+)
 </script>
 
 <style scoped>
