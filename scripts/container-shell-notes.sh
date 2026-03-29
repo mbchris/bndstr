@@ -26,7 +26,7 @@ Useful commands:
 - Run DB migrations (runtime-safe)
   node /app/packages/api/dist/db/migrate.js
 
-- Seed demo data
+- Seed default data (from /app/scripts/seed_example.sql)
   node /app/packages/api/dist/db/seed.js
 
 - Grant user internal pro access (dev override)

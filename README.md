@@ -124,7 +124,7 @@ docker exec -it <app-container> sh
 Included commands cover:
 - API health/session checks
 - DB migration: `node /app/packages/api/dist/db/migrate.js`
-- DB seed: `node /app/packages/api/dist/db/seed.js`
+- DB seed (loads `/app/scripts/seed_example.sql`): `node /app/packages/api/dist/db/seed.js`
 - User internal pro assignment (`/api/billing/internal/assign-user-pro`)
 - Band pro-zero assignment (`/api/billing/internal/assign-pro-zero`)
 - Migration file presence check
