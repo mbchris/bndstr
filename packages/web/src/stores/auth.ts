@@ -44,7 +44,8 @@ export const useAuthStore = defineStore('auth', () => {
         Accept: 'application/json',
         Authorization: `Bearer ${token.value}`,
       },
-      credentials: 'include',
+      // Bearer auth should not be mixed with potentially stale cookie sessions.
+      credentials: 'omit',
     })
 
     if (!res.ok) {
@@ -67,7 +68,8 @@ export const useAuthStore = defineStore('auth', () => {
     const res = await fetch(`${apiBase}/api/bands`, {
       method: 'GET',
       headers,
-      credentials: 'include',
+      // If a bearer token is present, avoid cookie/session ambiguity.
+      credentials: token.value ? 'omit' : 'include',
     })
 
     if (!res.ok) {

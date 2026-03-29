@@ -1,7 +1,7 @@
 <template>
   <q-page class="impress-page">
     <div class="impress-content q-pa-md">
-      <div class="row items-center q-mb-md">
+      <div class="row items-center q-mb-md impress-back-row">
         <q-btn flat icon="arrow_back" label="Back" @click="goBack" />
       </div>
       <div class="impress-card">
@@ -78,6 +78,10 @@ Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer 
   max-width: 980px;
   margin: 0 auto;
   width: 100%;
+}
+
+.impress-back-row {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 8px);
 }
 
 .impress-card {
