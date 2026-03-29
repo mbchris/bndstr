@@ -46,12 +46,23 @@ const patchMemberSchema = z.object({
 
 usersRouter.patch(
   '/:id',
-  requireRole('admin'),
   zValidator('json', patchMemberSchema),
   async (c) => {
     const bandId = c.get('bandId')
     const targetUserId = c.req.param('id')
     const data = c.req.valid('json')
+    const requesterRole = c.get('bandRole') as 'member' | 'admin' | 'owner'
+
+    const keys = Object.keys(data) as Array<keyof typeof data>
+    if (keys.length === 0) {
+      return c.json({ error: 'No fields to update' }, 400)
+    }
+
+    const isBeerOnlyUpdate = keys.every((key) => key === 'beerCount')
+    const canManageMembers = requesterRole === 'admin' || requesterRole === 'owner'
+    if (!isBeerOnlyUpdate && !canManageMembers) {
+      return c.json({ error: 'Forbidden: requires admin role' }, 403)
+    }
 
     const [updated] = await db
       .update(bandMembers)

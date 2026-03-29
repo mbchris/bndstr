@@ -250,7 +250,7 @@ async function addBeer() {
     beerRainActive.value = true
     await bandStore.fetchMembers()
     $q.notify({ message: t('admin.beerAdded'), icon: 'science', color: 'orange' })
-  } catch { $q.notify({ message: 'Failed to update beer count', color: 'negative' }) }
+  } catch (e: any) { $q.notify({ message: e?.message || 'Failed to update beer count', color: 'negative' }) }
   finally { beerLoading.value = false }
 }
 
@@ -260,8 +260,8 @@ async function removeBeer() {
   try {
     await apiJson(`/users/${bierwart.value.id}`, { method: 'PATCH', body: JSON.stringify({ beerCount: (bierwart.value.beerCount || 0) - 1 }) })
     await bandStore.fetchMembers()
-  } catch {
-    // ignore
+  } catch (e: any) {
+    $q.notify({ message: e?.message || 'Failed to update beer count', color: 'negative' })
   } finally { beerLoading.value = false }
 }
 
