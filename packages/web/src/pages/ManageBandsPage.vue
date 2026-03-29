@@ -23,10 +23,11 @@
           <q-item v-for="band in authStore.bands" :key="band.id">
             <q-item-section>
               <q-item-label class="text-weight-medium">{{ band.name }}</q-item-label>
-              <q-item-label caption>Slug: {{ band.slug }} | Role: {{ band.role }} | Plan: {{ band.plan }} | Pro access: {{ band.hasProPlan ? 'yes' : 'no' }}</q-item-label>
+              <q-item-label caption>Slug: {{ band.slug }} | Role: {{ band.role }} | Pro access: {{ band.hasProPlan ? 'yes' : 'no' }}</q-item-label>
             </q-item-section>
             <q-item-section side>
               <div class="row q-gutter-xs">
+                <q-badge outline color="secondary" :label="formatPlanLabel(band.plan)" />
                 <q-btn flat dense icon="check_circle" label="Select" @click="switchBand(band.id)" />
                 <q-btn
                   v-if="canManageBand(band.role)"
@@ -240,8 +241,12 @@ function formatDateTime(value: string | null) {
 }
 
 async function refreshBands() {
-  const bands = await apiJson<BandMembership[]>('/bands')
-  authStore.setBands(bands)
+  await authStore.loadBands()
+}
+
+function formatPlanLabel(plan: string | null | undefined) {
+  const normalized = (plan ?? 'free').toUpperCase()
+  return `${normalized} plan`
 }
 
 function switchBand(bandId: number) {

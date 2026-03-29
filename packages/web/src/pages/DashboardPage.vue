@@ -5,6 +5,7 @@
         <div class="col-12 col-md">
           <div class="text-h4 text-weight-bold">Dashboard</div>
           <div class="text-body2 text-grey-7">Manage your bands, subscription, and invitation access.</div>
+          <div class="text-caption text-grey-8 q-mt-xs">Logged in as {{ userIdentity }}</div>
         </div>
         <div class="col-12 col-md-auto">
           <q-btn color="primary" round dense icon="home" @click="openActiveBandApp">
@@ -43,10 +44,11 @@
               <q-item v-for="band in authStore.bands" :key="band.id">
                 <q-item-section>
                   <q-item-label class="text-weight-medium">{{ band.name }}</q-item-label>
-                  <q-item-label caption>Slug: {{ band.slug }} | Role: {{ band.role }} | Plan: {{ band.plan }} | Pro access: {{ band.hasProPlan ? 'yes' : 'no' }}</q-item-label>
+                  <q-item-label caption>Slug: {{ band.slug }} | Role: {{ band.role }} | Pro access: {{ band.hasProPlan ? 'yes' : 'no' }}</q-item-label>
                 </q-item-section>
                 <q-item-section side>
                   <div class="row q-gutter-xs">
+                    <q-badge outline color="secondary" :label="formatPlanLabel(band.plan)" />
                     <q-badge v-if="authStore.activeBandId === band.id" color="primary" label="Active" />
                     <q-btn flat round dense icon="check_circle" @click="selectBandOnly(band.id)">
                       <q-tooltip>Select Band</q-tooltip>
@@ -299,6 +301,11 @@ type InviteCode = {
 }
 
 const activePlanLabel = computed(() => authStore.activeBand?.plan ?? 'free')
+const userIdentity = computed(() => {
+  const name = authStore.user?.name?.trim() || 'Unknown user'
+  const email = authStore.user?.email?.trim() || 'no-email'
+  return `${name}, ${email}`
+})
 const activeSubscriptionStatusLabel = computed(() => {
   const status = authStore.activeBand?.subscriptionStatus ?? 'none'
   if (status === 'active') return 'Active'
@@ -330,9 +337,13 @@ function formatDateTime(value: string | null) {
   return new Date(value).toLocaleString()
 }
 
+function formatPlanLabel(plan: string | null | undefined) {
+  const normalized = (plan ?? 'free').toUpperCase()
+  return `${normalized} plan`
+}
+
 async function refreshBands() {
-  const bands = await apiJson<BandMembership[]>('/bands')
-  authStore.setBands(bands)
+  await authStore.loadBands()
 }
 
 async function createBand() {

@@ -42,25 +42,14 @@ export default route(function (/* { store, ssrContext } */) {
     const auth = useAuthStore()
     const ensureBandsLoaded = async () => {
       if (auth.bands.length > 0) return
-
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-      if (auth.token) {
-        headers.Authorization = `Bearer ${auth.token}`
+      await auth.loadBands()
+      if (isNativeLikeRuntime() && auth.bands.length <= 1) {
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          await delay(300)
+          await auth.loadBands()
+          if (auth.bands.length > 1) break
+        }
       }
-
-      const base = (process.env.API_URL ?? '').replace(/\/+$/, '').replace(/\/api$/, '')
-      const res = await fetch(`${base}/api/bands`, {
-        method: 'GET',
-        headers,
-        credentials: 'include',
-      })
-
-      if (!res.ok) {
-        throw new Error(`Failed to load bands (${res.status})`)
-      }
-
-      const bands = (await res.json()) as typeof auth.bands
-      auth.setBands(bands)
     }
 
     if (to.meta.requiresAuth && !auth.isAuthenticated) {

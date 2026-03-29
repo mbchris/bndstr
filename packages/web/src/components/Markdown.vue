@@ -6,10 +6,13 @@
 import { computed } from 'vue'
 import { marked } from 'marked'
 
-const props = defineProps<{ content?: string | null }>()
+const props = defineProps<{
+  content?: string | null
+  breaks?: boolean
+}>()
 
 const rendered = computed(() => {
   if (!props.content) return ''
-  return marked.parse(props.content, { async: false }) as string
+  return marked.parse(props.content, { async: false, breaks: props.breaks ?? false }) as string
 })
 </script>

@@ -55,6 +55,30 @@ export const useAuthStore = defineStore('auth', () => {
     return data?.user ?? null
   }
 
+  async function loadBands() {
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+    }
+
+    if (token.value) {
+      headers.Authorization = `Bearer ${token.value}`
+    }
+
+    const res = await fetch(`${apiBase}/api/bands`, {
+      method: 'GET',
+      headers,
+      credentials: 'include',
+    })
+
+    if (!res.ok) {
+      throw new Error(`Failed to load bands (${res.status})`)
+    }
+
+    const memberships = (await res.json()) as BandMembership[]
+    setBands(memberships)
+    return memberships
+  }
+
   async function loadSession() {
     try {
       let resolvedUser: User | null = null
@@ -137,6 +161,7 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     activeBand,
     loadSession,
+    loadBands,
     setToken,
     setActiveBand,
     setBands,

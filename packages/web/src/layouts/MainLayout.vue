@@ -41,9 +41,15 @@
                   v-close-popup
                   @click="selectBand(band.id)"
                 >
-                  <q-item-section>{{ band.name }}</q-item-section>
+                  <q-item-section>
+                    <q-item-label>{{ band.name }}</q-item-label>
+                    <q-item-label caption>{{ formatPlanLabel(band.plan) }}</q-item-label>
+                  </q-item-section>
                   <q-item-section side>
-                    <q-badge v-if="activeBandId === band.id" color="primary">{{ t('nav.active') }}</q-badge>
+                    <div class="column items-end q-gutter-xs">
+                      <q-badge v-if="activeBandId === band.id" color="primary">{{ t('nav.active') }}</q-badge>
+                      <q-badge outline color="secondary">{{ formatPlanLabel(band.plan) }}</q-badge>
+                    </div>
                   </q-item-section>
                 </q-item>
 
@@ -68,7 +74,7 @@
     </q-header>
 
     <q-page-container>
-      <router-view />
+      <router-view :key="routerViewKey" />
     </q-page-container>
 
     <q-footer bordered class="bottom-nav-footer safe-area-bottom">
@@ -98,7 +104,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { useAuthStore } from '../stores/auth'
@@ -165,6 +171,7 @@ const navLinks = computed(() => {
 
 const isBillingRoute = computed(() => route.path.startsWith('/billing'))
 const showTopNav = computed(() => route.path !== '/dashboard' && !isBillingRoute.value)
+const routerViewKey = computed(() => `${route.fullPath}::band-${authStore.activeBandId ?? 'none'}`)
 
 function isActiveRoute(path: string) {
   return route.path === path
@@ -176,6 +183,11 @@ function toggleDarkMode() {
 
 function selectBand(id: number) {
   activeBandId.value = id
+}
+
+function formatPlanLabel(plan: string | null | undefined) {
+  const normalized = (plan ?? 'free').toUpperCase()
+  return `${normalized} plan`
 }
 
 function goDashboard() {
@@ -191,7 +203,7 @@ async function handleLogout() {
   try {
     // Revoke the session server-side (invalidates the token)
     if (authStore.token) {
-      const apiBase = (import.meta.env?.VITE_API_URL || process.env.API_URL || '').replace(/\/+$/, '').replace(/\/api$/, '')
+      const apiBase = (process.env.API_URL || '').replace(/\/+$/, '').replace(/\/api$/, '')
       await fetch(`${apiBase}/api/auth/sign-out`, {
         method: 'POST',
         headers: {
@@ -209,6 +221,14 @@ async function handleLogout() {
   authStore.clearSession()
   window.location.href = '/login'
 }
+
+onMounted(async () => {
+  try {
+    await authStore.loadBands()
+  } catch {
+    // Keep layout usable even if band refresh fails transiently.
+  }
+})
 </script>
 
 <style scoped>
@@ -275,4 +295,3 @@ async function handleLogout() {
 }
 
 </style>
-

@@ -1,8 +1,11 @@
 <template>
   <q-page class="impress-page">
     <div class="impress-content q-pa-md">
+      <div class="row items-center q-mb-md">
+        <q-btn flat icon="arrow_back" label="Back" @click="goBack" />
+      </div>
       <div class="impress-card">
-        <Markdown :content="impressMarkdown" />
+        <Markdown :content="impressMarkdown" :breaks="true" />
       </div>
       <div class="impress-rev q-mt-md text-caption text-grey-5">Build: {{ gitRev }}</div>
     </div>
@@ -10,45 +13,56 @@
 </template>
 
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
 import Markdown from '../components/Markdown.vue'
+
+const router = useRouter()
 const gitRev = (process.env.GIT_REV ?? 'unknown').trim() || 'unknown'
 
-const impressMarkdown = `# Impress
+function goBack() {
+  if (window.history.length > 1) {
+    router.back()
+    return
+  }
+  void router.push('/')
+}
 
-Impressum
-Angaben gemäß § 5 TMG
+const impressMarkdown = `
+
+## Impressum
+**Angaben gemäß § 5 TMG**
 Four Keys Interactive GbR
 Seestr. 110
 71067 Sindelfingen
 
-Vertreten durch:
+**Vertreten durch:**
 Michael Mew
 Christian Schneider
 Niklas Arens
 Christian Muellerschoen
 
-Kontakt
+**Kontakt**
 Telefon: +49 (0)7031 / 68 80 421
 E-Mail: contact@4ki.app
 
-Umsatzsteuer-ID
+**Umsatzsteuer-ID**
 Umsatzsteuer-Identifikationsnummer gemäß § 27 a Umsatzsteuergesetz:
 beantragt
 
-Wirtschafts-ID
+**Wirtschafts-ID**
 Wirtschaftsidentifikationsnummer gemäß § 139 c Abgabenordnung:
 beantragt
 
-Redaktionell Verantwortlicher
+**Redaktionell Verantwortlicher**
 Christian Schneider und Christian Müllerschön
 Seestr. 110
 71067 Sindelfingen
 
-EU-Streitschlichtung
+**EU-Streitschlichtung**
 Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit: https://ec.europa.eu/consumers/odr/.
 Unsere E-Mail-Adresse finden Sie oben im Impressum.
 
-Verbraucher­streit­beilegung/Universalschlichtungs­stelle
+**Verbraucher­streit­beilegung/Universalschlichtungs­stelle**
 Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.`
 </script>
 
